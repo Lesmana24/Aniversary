@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production build outputs
+dist/
+**/dist/
+build/
+
+# Environment variable files & Firebase Service Account credentials
+.env
+.env.local
+.env.*.local
+*.env
+server/.env
+client/.env
+
+# Sensitive JSON Keys & Credentials
+*firebase-adminsdk*.json
+*service-account*.json
+firebase-key.json
+**/firebase-key.json
+*.pem
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

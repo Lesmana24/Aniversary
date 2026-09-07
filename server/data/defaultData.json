@@ -1,0 +1,187 @@
+{
+  "config": {
+    "title": "Lesmana & Nafla 2nd Anniversary",
+    "startDate": "2024-09-08T00:00:00.000Z",
+    "targetDate": "2026-09-08T00:00:00.000Z",
+    "partner1": "Lesmana",
+    "partner2": "Nafla (Bebe)",
+    "subtitle": "730 Hari Penuh Cinta, Tawa & Kenangan Indah",
+    "coverPhoto": "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80",
+    "bgmTitle": "Pesan Suara & Lagu Spesial Bebe 🎧"
+  },
+  "wishlist": [
+    {
+      "id": "wish-1",
+      "title": "Piknik Santai di Kebun Raya Bogor",
+      "category": "Outdoor",
+      "completed": true,
+      "priority": "High"
+    },
+    {
+      "id": "wish-2",
+      "title": "Pottery Class Studio Bikin Cangkir Berdua",
+      "category": "Creative",
+      "completed": false,
+      "priority": "High"
+    },
+    {
+      "id": "wish-3",
+      "title": "Nonton Live Concert Musik Impian",
+      "category": "Entertainment",
+      "completed": false,
+      "priority": "Medium"
+    },
+    {
+      "id": "wish-4",
+      "title": "Short Getaway Ke Pantai Sunset",
+      "category": "Trip",
+      "completed": false,
+      "priority": "High"
+    }
+  ],
+  "memories": [
+    {
+      "id": "mem-1",
+      "title": "Ngopi & Obrolan Panjang di Nako Bogor",
+      "date": "2024-09-08",
+      "location": "Nako Bogor",
+      "category": "Cafe",
+      "photo": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+      "story": "Hari pertama kencan resmi kita! Berawal dari canggung sampai lupa waktu karena ketawa terus dengar cerita lucu Bebe.",
+      "rating": 5
+    },
+    {
+      "id": "mem-2",
+      "title": "Sore Hangat Piknik di Senayan Park GBK",
+      "date": "2024-11-14",
+      "location": "GBK Jakarta",
+      "category": "Outdoor",
+      "photo": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      "story": "Gelar tikar sambil milih matcha gelato kesukaan Bebe. Angin sorenya sejuk banget, sama sejuknya kayak senyum Bebe.",
+      "rating": 5
+    },
+    {
+      "id": "mem-3",
+      "title": "Gelato Walk & Berburu Vinyl di Blok M",
+      "date": "2025-02-14",
+      "location": "Blok M Jakarta",
+      "category": "Cafe",
+      "photo": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80",
+      "story": "Jalan-jalan santai pegangan tangan pas Valentine. Foto polaroid kita di dekat kedai kopi tua jadi kenangan paling manis.",
+      "rating": 5
+    },
+    {
+      "id": "mem-4",
+      "title": "Breeze Pagi di Telaga Saat Puncak",
+      "date": "2025-06-20",
+      "location": "Puncak Bogor",
+      "category": "Trip",
+      "photo": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80",
+      "story": "Jalan pagi di antara kebun teh dan kabut tipis. Dinginnya puncak bikin pelukan Bebe kerasa makin hangat.",
+      "rating": 5
+    }
+  ],
+  "vouchers": [
+    {
+      "id": "vouch-1",
+      "title": "Tiket Kencan Bebas Impian 🎟️",
+      "description": "Bebas pilih tempat dinner + nonton film bioskop pilihan Bebe tanpa perdebatan!",
+      "code": "BEBE-ROMANTIC-DATE-2026",
+      "expiry": "Berlaku Selamanya",
+      "claimed": false,
+      "claimedAt": null,
+      "badge": "Special Gift"
+    },
+    {
+      "id": "vouch-2",
+      "title": "Kupon Relaksasi & Head Massage 💆‍♀️",
+      "description": "Gratis pijat bahu + kepala 30 menit dari Lesmana lengkap dengan aroma terapi kesukaan.",
+      "code": "LESMANA-MASSAGE-PAMPER",
+      "expiry": "Berlaku 100x Penggunaan",
+      "claimed": false,
+      "claimedAt": null,
+      "badge": "Pamper Season"
+    },
+    {
+      "id": "vouch-3",
+      "title": "Voucher Hadiah Misteri 2 Tahun 🎁",
+      "description": "Pesan Rahasia: 'Aku sayang Bebe selamanya. Makasih udah jadi rumah paling nyaman 2 tahun ini.'",
+      "code": "FOREVER-LESMANA-BEBE",
+      "expiry": "Janji Suci",
+      "claimed": false,
+      "claimedAt": null,
+      "badge": "Secret Gift"
+    }
+  ],
+  "quiz": [
+    {
+      "id": "q-1",
+      "question": "Kapan tanggal resmi kita jadian?",
+      "options": [
+        "8 September 2024",
+        "10 Oktober 2024",
+        "14 Februari 2024",
+        "8 Agustus 2024"
+      ],
+      "answer": 0,
+      "explanation": "Pintar! Tanggal 8 September 2024 adalah awal mula perjalanan indah kita!"
+    },
+    {
+      "id": "q-2",
+      "question": "Di mana tempat kencan resmi pertama Lesmana & Bebe?",
+      "options": [
+        "Nako Bogor",
+        "Blok M",
+        "Monas",
+        "Bioskop XXI"
+      ],
+      "answer": 0,
+      "explanation": "Tepat sekali! Ngopi santai di Nako Bogor sambil obrolan pertama kita."
+    },
+    {
+      "id": "q-3",
+      "question": "Varian gelato kesukaan Bebe pas kita jalan-jalan di Blok M?",
+      "options": [
+        "Matcha & Pistachio",
+        "Chocolate Deluxe",
+        "Vanilla Bean",
+        "Strawberry Sorbet"
+      ],
+      "answer": 0,
+      "explanation": "Yup! Matcha & Pistachio selalu jadi pilihan utama favorit Bebe!"
+    },
+    {
+      "id": "q-4",
+      "question": "Siapa yang paling sering panggil sebutan manis 'Bebe'?",
+      "options": [
+        "Lesmana dong!",
+        "Semua orang",
+        "Teman kampus",
+        "Kucing tetangga"
+      ],
+      "answer": 0,
+      "explanation": "Tentu saja Lesmana! Panggilan khusus paling penuh kasih sayang."
+    },
+    {
+      "id": "q-5",
+      "question": "Berapa lama Lesmana bakal sayang sama Bebe?",
+      "options": [
+        "Selamanya sampai tua ∞",
+        "730 hari aja",
+        "Sampai besok",
+        "100 tahun"
+      ],
+      "answer": 0,
+      "explanation": "Pastinya SELAMANYA sampai tua nanti ❤️!"
+    }
+  ],
+  "letter": {
+    "sender": "Lesmana",
+    "receiver": "Nafla (Bebe) Sayang",
+    "title": "Surat Cinta 730 Hari Bersama",
+    "date": "8 September 2026",
+    "content": "Halo Bebe sayang,\n\nTidak terasa sudah 730 hari (2 tahun penuh) kita berjalan berdampingan. Dari awal pertemuan yang penuh rasa canggung, obrolan manis sampai larut malam, gelak tawa di sela-sela kesibukan, sampai saat-saat kita saling menguatkan saat lelah.\n\nSetiap momen bersama Bebe selalu terasa istimewa. Terima kasih sudah menjadi sosok yang begitu sabar, manis, penuh perhatian, dan selalu membawa kehangatan di hari-hari Lesmana.\n\nSemoga di tahun ke-3 dan tahun-tahun berikutnya, kita bisa terus merajut impian bersama, menjelajahi tempat-tempat baru, dan saling mencintai dengan lebih dewasa dan bahagia.\n\nSelamat Anniversary ke-2 ya, Bebe sayang! I love you so much ❤️",
+    "audioUrl": "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3",
+    "audioDuration": "02:30"
+  }
+}

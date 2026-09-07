@@ -1,0 +1,37 @@
+import React from 'react';
+import CassettePlayer from '../components/CassettePlayer';
+import LoveLetter from '../components/LoveLetter';
+import { Mail, Music, Sparkles } from 'lucide-react';
+
+export default function Letter({ letter, config }) {
+  return (
+    <div className="space-y-8 animate-fadeIn pb-12">
+      {/* Header */}
+      <div className="bg-white rounded-3xl p-6 shadow-scrapbook border-2 border-dashed border-pastel-pink/40 text-center max-w-2xl mx-auto">
+        <span className="bg-pastel-pink/20 text-pastel-pink-dark text-xs font-headline font-bold px-3 py-1 rounded-full border border-pastel-pink/30 flex items-center gap-1 w-fit mx-auto">
+          <Mail className="w-3.5 h-3.5" /> VOICE NOTE & LOVE LETTER
+        </span>
+        <h1 className="font-headline font-extrabold text-2xl sm:text-3xl text-pastel-lavender-dark mt-2">
+          Surat Cinta & Pesan Suara Bebe 💌
+        </h1>
+        <p className="text-xs sm:text-sm text-pastel-text mt-1">
+          Dengarkan kaset pita pesan suara spesial dari Lesmana sambil membaca surat ucapan anniversary 2 tahun.
+        </p>
+      </div>
+
+      {/* Cassette Tape Player */}
+      <section>
+        <CassettePlayer
+          title={config?.bgmTitle || letter?.audioTitle || "Pesan Suara Spesial dari Lesmana untuk Bebe 🎧"}
+          audioUrl={letter?.audioUrl}
+          duration={letter?.audioDuration}
+        />
+      </section>
+
+      {/* Handwritten Love Letter */}
+      <section>
+        <LoveLetter letter={letter} />
+      </section>
+    </div>
+  );
+}
