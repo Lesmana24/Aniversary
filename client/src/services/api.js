@@ -189,6 +189,31 @@ export const updateConfig = async (data) => {
   return { success: true, data };
 };
 
+// Helper to track if database has already been initialized (prevents auto-reseeding deleted items)
+async function checkOrSetInitialized() {
+  if (!db) return true;
+  try {
+    const initRef = doc(db, 'settings', 'init');
+    const initSnap = await getDoc(initRef);
+    if (initSnap.exists()) {
+      return true; // Already initialized
+    }
+
+    const anniversaryRef = doc(db, 'settings', 'anniversary');
+    const anniversarySnap = await getDoc(anniversaryRef);
+    if (anniversarySnap.exists()) {
+      await setDoc(initRef, { initialized: true, createdAt: new Date().toISOString() });
+      return true; // Already established DB
+    }
+
+    await setDoc(initRef, { initialized: true, createdAt: new Date().toISOString() });
+    return false; // First time init
+  } catch (e) {
+    console.warn("Firestore checkInitialized error:", e);
+    return true; // Default to true on error so we don't accidentally overwrite user deletions
+  }
+}
+
 // 4. Wishlist
 export const fetchWishlist = async () => {
   const apiRes = await safeFetch(`${API_BASE}/wishlist`);
@@ -202,7 +227,10 @@ export const fetchWishlist = async () => {
         const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         return { success: true, mode: 'firebase-client', data: items };
       } else {
-        // Seed default wishlist
+        const isInit = await checkOrSetInitialized();
+        if (isInit) {
+          return { success: true, mode: 'firebase-client', data: [] };
+        }
         for (const item of DEFAULT_DATA.wishlist) {
           await setDoc(doc(db, 'wishlist', item.id), item);
         }
@@ -277,6 +305,10 @@ export const fetchMemories = async () => {
         const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         return { success: true, mode: 'firebase-client', data: items };
       } else {
+        const isInit = await checkOrSetInitialized();
+        if (isInit) {
+          return { success: true, mode: 'firebase-client', data: [] };
+        }
         for (const m of DEFAULT_DATA.memories) {
           await setDoc(doc(db, 'memories', m.id), m);
         }
@@ -347,6 +379,10 @@ export const fetchVouchers = async () => {
         const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         return { success: true, mode: 'firebase-client', data: items };
       } else {
+        const isInit = await checkOrSetInitialized();
+        if (isInit) {
+          return { success: true, mode: 'firebase-client', data: [] };
+        }
         for (const v of DEFAULT_DATA.vouchers) {
           await setDoc(doc(db, 'vouchers', v.id), v);
         }
@@ -407,6 +443,10 @@ export const fetchQuiz = async () => {
         const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         return { success: true, mode: 'firebase-client', data: items };
       } else {
+        const isInit = await checkOrSetInitialized();
+        if (isInit) {
+          return { success: true, mode: 'firebase-client', data: [] };
+        }
         for (const q of DEFAULT_DATA.quiz) {
           await setDoc(doc(db, 'quiz', q.id), q);
         }
