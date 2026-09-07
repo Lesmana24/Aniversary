@@ -1,12 +1,110 @@
-import { storage } from '../config/firebase';
+import { db, storage } from '../config/firebase';
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy
+} from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const API_BASE = '/api';
 
-// Helper function to upload an image from device directly to Firebase Storage (with base64 fallback)
+// Initial default fallback seed data
+const DEFAULT_DATA = {
+  config: {
+    title: "Lesmana & Nafla 2nd Anniversary",
+    startDate: "2024-09-08T00:00:00.000Z",
+    targetDate: "2026-09-08T00:00:00.000Z",
+    partner1: "Lesmana",
+    partner2: "Nafla (Bebe)",
+    subtitle: "730 Hari Penuh Cinta, Tawa & Kenangan Indah",
+    coverPhoto: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80",
+    bgmTitle: "Pesan Suara & Lagu Spesial Bebe 🎧"
+  },
+  wishlist: [
+    { id: "wish-1", title: "Piknik Santai di Kebun Raya Bogor", category: "Outdoor", completed: true, priority: "High" },
+    { id: "wish-2", title: "Pottery Class Studio Bikin Cangkir Berdua", category: "Creative", completed: false, priority: "High" },
+    { id: "wish-3", title: "Nonton Live Concert Musik Impian", category: "Entertainment", completed: false, priority: "Medium" },
+    { id: "wish-4", title: "Short Getaway Ke Pantai Sunset", category: "Trip", completed: false, priority: "High" }
+  ],
+  memories: [
+    {
+      id: "mem-1",
+      title: "Ngopi & Obrolan Panjang di Nako Bogor",
+      date: "2024-09-08",
+      location: "Nako Bogor",
+      category: "Cafe",
+      photo: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+      story: "Hari pertama kencan resmi kita! Berawal dari canggung sampai lupa waktu karena ketawa terus dengar cerita lucu Bebe.",
+      rating: 5
+    },
+    {
+      id: "mem-2",
+      title: "Sore Hangat Piknik di Senayan Park GBK",
+      date: "2024-11-14",
+      location: "GBK Jakarta",
+      category: "Outdoor",
+      photo: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      story: "Gelar tikar sambil milih matcha gelato kesukaan Bebe. Angin sorenya sejuk banget, sama sejuknya kayak senyum Bebe.",
+      rating: 5
+    },
+    {
+      id: "mem-3",
+      title: "Gelato Walk & Berburu Vinyl di Blok M",
+      date: "2025-02-14",
+      location: "Blok M Jakarta",
+      category: "Cafe",
+      photo: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=800&q=80",
+      story: "Jalan-jalan santai pegangan tangan pas Valentine. Foto polaroid kita di dekat kedai kopi tua jadi kenangan paling manis.",
+      rating: 5
+    }
+  ],
+  vouchers: [
+    { id: "vouch-1", title: "Tiket Kencan Bebas Impian 🎟️", description: "Bebas pilih tempat dinner + nonton film bioskop pilihan Bebe tanpa perdebatan!", code: "BEBE-ROMANTIC-DATE-2026", expiry: "Berlaku Selamanya", claimed: false, badge: "Special Gift" },
+    { id: "vouch-2", title: "Kupon Relaksasi & Head Massage 💆‍♀️", description: "Gratis pijat bahu + kepala 30 menit dari Lesmana lengkap dengan aroma terapi kesukaan.", code: "LESMANA-MASSAGE-PAMPER", expiry: "Berlaku 100x Penggunaan", claimed: false, badge: "Pamper Season" },
+    { id: "vouch-3", title: "Voucher Hadiah Misteri 2 Tahun 🎁", description: "Pesan Rahasia: 'Aku sayang Bebe selamanya. Makasih udah jadi rumah paling nyaman 2 tahun ini.'", code: "FOREVER-LESMANA-BEBE", expiry: "Janji Suci", claimed: false, badge: "Secret Gift" }
+  ],
+  quiz: [
+    { id: "q-1", question: "Kapan tanggal resmi kita jadian?", options: ["8 September 2024", "10 Oktober 2024", "14 Februari 2024", "8 Agustus 2024"], answer: 0, explanation: "Pintar! Tanggal 8 September 2024 adalah awal mula perjalanan indah kita!" },
+    { id: "q-2", question: "Di mana tempat kencan resmi pertama Lesmana & Bebe?", options: ["Nako Bogor", "Blok M", "Monas", "Bioskop XXI"], answer: 0, explanation: "Tepat sekali! Ngopi santai di Nako Bogor sambil obrolan pertama kita." },
+    { id: "q-3", question: "Varian gelato kesukaan Bebe pas kita jalan-jalan di Blok M?", options: ["Matcha & Pistachio", "Chocolate Deluxe", "Vanilla Bean", "Strawberry Sorbet"], answer: 0, explanation: "Yup! Matcha & Pistachio selalu jadi pilihan utama favorit Bebe!" },
+    { id: "q-4", question: "Siapa yang paling sering panggil sebutan manis 'Bebe'?", options: ["Lesmana dong!", "Semua orang", "Teman kampus", "Kucing tetangga"], answer: 0, explanation: "Tentu saja Lesmana! Panggilan khusus paling penuh kasih sayang." },
+    { id: "q-5", question: "Berapa lama Lesmana bakal sayang sama Bebe?", options: ["Selamanya sampai tua ∞", "730 hari aja", "Sampai besok", "100 tahun"], answer: 0, explanation: "Pastinya SELAMANYA sampai tua nanti ❤️!" }
+  ],
+  letter: {
+    sender: "Lesmana",
+    receiver: "Nafla (Bebe) Sayang",
+    title: "Surat Cinta 730 Hari Bersama",
+    date: "8 September 2026",
+    content: "Halo Bebe sayang,\n\nTidak terasa sudah 730 hari (2 tahun penuh) kita berjalan berdampingan. Dari awal pertemuan yang penuh rasa canggung, obrolan manis sampai larut malam, gelak tawa di sela-sela kesibukan, sampai saat-saat kita saling menguatkan saat lelah.\n\nSetiap momen bersama Bebe selalu terasa istimewa. Terima kasih sudah menjadi sosok yang begitu sabar, manis, penuh perhatian, dan selalu membawa kehangatan di hari-hari Lesmana.\n\nSemoga di tahun ke-3 dan tahun-tahun berikutnya, kita bisa terus merajut impian bersama, menjelajahi tempat-tempat baru, dan saling mencintai dengan lebih dewasa dan bahagia.\n\nSelamat Anniversary ke-2 ya, Bebe sayang! I love you so much ❤️",
+    audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3",
+    audioDuration: "02:30"
+  }
+};
+
+// Helper: Try Express REST API, fallback to Firestore directly
+async function safeFetch(url, options) {
+  try {
+    const res = await fetch(url, options);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success) return data;
+    }
+  } catch (e) {
+    // API server not present or 404 (e.g. Netlify static hosting)
+  }
+  return null;
+}
+
+// 1. Upload Image Helper (Firebase Storage -> Base64 fallback)
 export const uploadImage = async (file) => {
   if (!file) return null;
-
   try {
     if (storage) {
       const fileName = `scrapbook_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
@@ -16,10 +114,9 @@ export const uploadImage = async (file) => {
       return downloadURL;
     }
   } catch (err) {
-    console.warn("Firebase storage upload error, falling back to local FileReader:", err);
+    console.warn("Firebase storage upload warning:", err.message);
   }
 
-  // Fallback: Read file as Data URL (base64)
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
@@ -28,105 +125,339 @@ export const uploadImage = async (file) => {
   });
 };
 
+// 2. Admin Auth
 export const loginAdmin = async (credentials) => {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const apiRes = await safeFetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(credentials)
   });
-  return res.json();
+  if (apiRes) return apiRes;
+
+  // Direct client auth validation for Netlify
+  const { username, password } = credentials || {};
+  if (username?.toLowerCase() === 'lesmana' && password === 'bebesayang2026') {
+    return {
+      success: true,
+      token: 'secret-lesmana-admin-token-2026',
+      user: { username: 'lesmana', role: 'ADMIN' }
+    };
+  }
+  return { success: false, message: 'Username atau Password salah!' };
 };
 
+// 3. Config
 export const fetchConfig = async () => {
-  const res = await fetch(`${API_BASE}/config`);
-  return res.json();
+  const apiRes = await safeFetch(`${API_BASE}/config`);
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'settings', 'anniversary');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return { success: true, mode: 'firebase-client', data: snap.data() };
+      } else {
+        await setDoc(docRef, DEFAULT_DATA.config);
+        return { success: true, mode: 'firebase-client', data: DEFAULT_DATA.config };
+      }
+    } catch (e) {
+      console.warn("Firestore fetchConfig error:", e);
+    }
+  }
+  return { success: true, mode: 'local', data: DEFAULT_DATA.config };
 };
 
 export const updateConfig = async (data) => {
-  const res = await fetch(`${API_BASE}/config`, {
+  const apiRes = await safeFetch(`${API_BASE}/config`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  return res.json();
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'settings', 'anniversary');
+      await setDoc(docRef, data, { merge: true });
+      const snap = await getDoc(docRef);
+      return { success: true, data: snap.data() };
+    } catch (e) {
+      console.warn("Firestore updateConfig error:", e);
+    }
+  }
+  return { success: true, data };
 };
 
-export const fetchMemories = async () => {
-  const res = await fetch(`${API_BASE}/memories`);
-  return res.json();
-};
-
-export const addMemory = async (data) => {
-  const res = await fetch(`${API_BASE}/memories`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  return res.json();
-};
-
-export const deleteMemory = async (id) => {
-  const res = await fetch(`${API_BASE}/memories/${id}`, {
-    method: 'DELETE'
-  });
-  return res.json();
-};
-
-export const fetchVouchers = async () => {
-  const res = await fetch(`${API_BASE}/vouchers`);
-  return res.json();
-};
-
-export const claimVoucher = async (id) => {
-  const res = await fetch(`${API_BASE}/vouchers/${id}/claim`, {
-    method: 'POST'
-  });
-  return res.json();
-};
-
-export const resetVouchers = async () => {
-  const res = await fetch(`${API_BASE}/vouchers/reset`, {
-    method: 'POST'
-  });
-  return res.json();
-};
-
+// 4. Wishlist
 export const fetchWishlist = async () => {
-  const res = await fetch(`${API_BASE}/wishlist`);
-  return res.json();
+  const apiRes = await safeFetch(`${API_BASE}/wishlist`);
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const colRef = collection(db, 'wishlist');
+      const snap = await getDocs(colRef);
+      if (!snap.empty) {
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return { success: true, mode: 'firebase-client', data: items };
+      } else {
+        // Seed default wishlist
+        for (const item of DEFAULT_DATA.wishlist) {
+          await setDoc(doc(db, 'wishlist', item.id), item);
+        }
+        return { success: true, mode: 'firebase-client', data: DEFAULT_DATA.wishlist };
+      }
+    } catch (e) {
+      console.warn("Firestore fetchWishlist error:", e);
+    }
+  }
+  return { success: true, mode: 'local', data: DEFAULT_DATA.wishlist };
 };
 
 export const addWish = async (data) => {
-  const res = await fetch(`${API_BASE}/wishlist`, {
+  const apiRes = await safeFetch(`${API_BASE}/wishlist`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  return res.json();
+  if (apiRes) return apiRes;
+
+  const newWish = {
+    id: 'wish-' + Date.now(),
+    title: data.title || 'Impian Baru',
+    category: data.category || 'Outdoor',
+    completed: false,
+    priority: data.priority || 'High'
+  };
+
+  if (db) {
+    try {
+      await setDoc(doc(db, 'wishlist', newWish.id), newWish);
+    } catch (e) {
+      console.warn("Firestore addWish error:", e);
+    }
+  }
+  return { success: true, data: newWish };
 };
 
 export const toggleWish = async (id) => {
-  const res = await fetch(`${API_BASE}/wishlist/${id}/toggle`, {
+  const apiRes = await safeFetch(`${API_BASE}/wishlist/${id}/toggle`, {
     method: 'PATCH'
   });
-  return res.json();
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'wishlist', id);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const current = snap.data();
+        const updated = !current.completed;
+        await updateDoc(docRef, { completed: updated });
+        return { success: true, data: { ...current, id, completed: updated } };
+      }
+    } catch (e) {
+      console.warn("Firestore toggleWish error:", e);
+    }
+  }
+  return { success: true };
 };
 
+// 5. Memories
+export const fetchMemories = async () => {
+  const apiRes = await safeFetch(`${API_BASE}/memories`);
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const colRef = collection(db, 'memories');
+      const snap = await getDocs(colRef);
+      if (!snap.empty) {
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return { success: true, mode: 'firebase-client', data: items };
+      } else {
+        for (const m of DEFAULT_DATA.memories) {
+          await setDoc(doc(db, 'memories', m.id), m);
+        }
+        return { success: true, mode: 'firebase-client', data: DEFAULT_DATA.memories };
+      }
+    } catch (e) {
+      console.warn("Firestore fetchMemories error:", e);
+    }
+  }
+  return { success: true, mode: 'local', data: DEFAULT_DATA.memories };
+};
+
+export const addMemory = async (data) => {
+  const apiRes = await safeFetch(`${API_BASE}/memories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (apiRes) return apiRes;
+
+  const newMem = {
+    id: 'mem-' + Date.now(),
+    title: data.title || 'Momen Baru',
+    date: data.date || new Date().toISOString().split('T')[0],
+    location: data.location || 'Tempat Indah',
+    category: data.category || 'Cafe',
+    photo: data.photo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+    story: data.story || '',
+    rating: data.rating || 5
+  };
+
+  if (db) {
+    try {
+      await setDoc(doc(db, 'memories', newMem.id), newMem);
+    } catch (e) {
+      console.warn("Firestore addMemory error:", e);
+    }
+  }
+  return { success: true, data: newMem };
+};
+
+export const deleteMemory = async (id) => {
+  const apiRes = await safeFetch(`${API_BASE}/memories/${id}`, {
+    method: 'DELETE'
+  });
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'memories', id));
+    } catch (e) {
+      console.warn("Firestore deleteMemory error:", e);
+    }
+  }
+  return { success: true };
+};
+
+// 6. Vouchers
+export const fetchVouchers = async () => {
+  const apiRes = await safeFetch(`${API_BASE}/vouchers`);
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const colRef = collection(db, 'vouchers');
+      const snap = await getDocs(colRef);
+      if (!snap.empty) {
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return { success: true, mode: 'firebase-client', data: items };
+      } else {
+        for (const v of DEFAULT_DATA.vouchers) {
+          await setDoc(doc(db, 'vouchers', v.id), v);
+        }
+        return { success: true, mode: 'firebase-client', data: DEFAULT_DATA.vouchers };
+      }
+    } catch (e) {
+      console.warn("Firestore fetchVouchers error:", e);
+    }
+  }
+  return { success: true, mode: 'local', data: DEFAULT_DATA.vouchers };
+};
+
+export const claimVoucher = async (id) => {
+  const apiRes = await safeFetch(`${API_BASE}/vouchers/${id}/claim`, {
+    method: 'POST'
+  });
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'vouchers', id);
+      await updateDoc(docRef, { claimed: true, claimedAt: new Date().toISOString() });
+    } catch (e) {
+      console.warn("Firestore claimVoucher error:", e);
+    }
+  }
+  return { success: true };
+};
+
+export const resetVouchers = async () => {
+  const apiRes = await safeFetch(`${API_BASE}/vouchers/reset`, {
+    method: 'POST'
+  });
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      for (const v of DEFAULT_DATA.vouchers) {
+        await setDoc(doc(db, 'vouchers', v.id), { ...v, claimed: false, claimedAt: null });
+      }
+    } catch (e) {
+      console.warn("Firestore resetVouchers error:", e);
+    }
+  }
+  return { success: true };
+};
+
+// 7. Quiz
 export const fetchQuiz = async () => {
-  const res = await fetch(`${API_BASE}/quiz`);
-  return res.json();
+  const apiRes = await safeFetch(`${API_BASE}/quiz`);
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const colRef = collection(db, 'quiz');
+      const snap = await getDocs(colRef);
+      if (!snap.empty) {
+        const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        return { success: true, mode: 'firebase-client', data: items };
+      } else {
+        for (const q of DEFAULT_DATA.quiz) {
+          await setDoc(doc(db, 'quiz', q.id), q);
+        }
+        return { success: true, mode: 'firebase-client', data: DEFAULT_DATA.quiz };
+      }
+    } catch (e) {
+      console.warn("Firestore fetchQuiz error:", e);
+    }
+  }
+  return { success: true, mode: 'local', data: DEFAULT_DATA.quiz };
 };
 
+// 8. Letter
 export const fetchLetter = async () => {
-  const res = await fetch(`${API_BASE}/letter`);
-  return res.json();
+  const apiRes = await safeFetch(`${API_BASE}/letter`);
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'settings', 'letter');
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        return { success: true, mode: 'firebase-client', data: snap.data() };
+      } else {
+        await setDoc(docRef, DEFAULT_DATA.letter);
+        return { success: true, mode: 'firebase-client', data: DEFAULT_DATA.letter };
+      }
+    } catch (e) {
+      console.warn("Firestore fetchLetter error:", e);
+    }
+  }
+  return { success: true, mode: 'local', data: DEFAULT_DATA.letter };
 };
 
 export const updateLetter = async (data) => {
-  const res = await fetch(`${API_BASE}/letter`, {
+  const apiRes = await safeFetch(`${API_BASE}/letter`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  return res.json();
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      const docRef = doc(db, 'settings', 'letter');
+      await setDoc(docRef, data, { merge: true });
+      const snap = await getDoc(docRef);
+      return { success: true, data: snap.data() };
+    } catch (e) {
+      console.warn("Firestore updateLetter error:", e);
+    }
+  }
+  return { success: true, data };
 };
