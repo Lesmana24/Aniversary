@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Save, Plus, RefreshCw, Settings, Sparkles } from 'lucide-react';
-import { addMemory, resetVouchers, updateLetter } from '../services/api';
+import { X, Save, Plus, RefreshCw, Settings, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { addMemory, resetVouchers, updateLetter, uploadImage } from '../services/api';
 
 export default function AdminDrawer({ isOpen, onClose, onRefreshData }) {
   const [activeTab, setActiveTab] = useState('memory');
@@ -12,11 +12,28 @@ export default function AdminDrawer({ isOpen, onClose, onRefreshData }) {
   const [category, setCategory] = useState('Cafe');
   const [photo, setPhoto] = useState('');
   const [story, setStory] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Form states for letter
   const [letterContent, setLetterContent] = useState('');
 
   if (!isOpen) return null;
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        setPhoto(url);
+      }
+    } catch (err) {
+      alert('Gagal mengunggah foto: ' + err.message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleAddMemory = async (e) => {
     e.preventDefault();
@@ -155,15 +172,45 @@ export default function AdminDrawer({ isOpen, onClose, onRefreshData }) {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-pastel-text mb-1">URL Foto Polaroid (Unsplash/Imgur/Firebase)</label>
-              <input
-                type="url"
-                value={photo}
-                onChange={(e) => setPhoto(e.target.value)}
-                placeholder="https://images.unsplash.com/..."
-                className="w-full px-3 py-2 rounded-xl bg-pastel-canvas border border-pastel-pink/30 text-xs font-medium text-pastel-text"
-              />
+            {/* Upload Foto Polaroid */}
+            <div className="p-3 rounded-xl bg-pastel-canvas border border-pastel-pink/30 space-y-2">
+              <label className="block text-xs font-bold text-pastel-text flex items-center justify-between">
+                <span>Foto Polaroid</span>
+              </label>
+
+              <label className="cursor-pointer bg-white px-3 py-2 rounded-xl border border-dashed border-pastel-pink/40 hover:border-pastel-lavender flex items-center justify-center gap-2 text-xs font-headline font-bold text-pastel-lavender-dark transition-all">
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-pastel-pink" />
+                    <span>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 text-pastel-pink" />
+                    <span>📁 Upload Foto dari Perangkat</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+              </label>
+
+              {photo && (
+                <div className="flex items-center gap-2 pt-1">
+                  <img src={photo} alt="Preview" className="w-10 h-10 rounded-lg object-cover" />
+                  <input
+                    type="text"
+                    value={photo}
+                    onChange={(e) => setPhoto(e.target.value)}
+                    placeholder="URL Foto..."
+                    className="flex-1 p-1 rounded bg-white text-[10px] text-pastel-text border border-gray-200"
+                  />
+                </div>
+              )}
             </div>
 
             <div>

@@ -12,6 +12,8 @@ import {
   RefreshCw,
   CheckCircle,
   Image as ImageIcon,
+  Upload,
+  Loader2,
   Calendar,
   MapPin,
   HelpCircle,
@@ -25,7 +27,7 @@ import {
   resetVouchers,
   updateLetter,
   addWish,
-  toggleWish
+  uploadImage
 } from '../services/api';
 
 export default function Admin({
@@ -46,6 +48,7 @@ export default function Admin({
   const [coverPhoto, setCoverPhoto] = useState(config?.coverPhoto || '');
   const [partner1, setPartner1] = useState(config?.partner1 || 'Lesmana');
   const [partner2, setPartner2] = useState(config?.partner2 || 'Nafla (Bebe)');
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   // New Memory Form State
   const [memTitle, setMemTitle] = useState('');
@@ -54,6 +57,7 @@ export default function Admin({
   const [memCategory, setMemCategory] = useState('Cafe');
   const [memPhoto, setMemPhoto] = useState('');
   const [memStory, setMemStory] = useState('');
+  const [isUploadingMemPhoto, setIsUploadingMemPhoto] = useState(false);
 
   // Letter Form State
   const [letterTitle, setLetterTitle] = useState(letter?.title || '');
@@ -70,6 +74,42 @@ export default function Admin({
   const showToast = (msg) => {
     setNotification(msg);
     setTimeout(() => setNotification(''), 3500);
+  };
+
+  // Upload Cover Photo File Handler
+  const handleCoverFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingCover(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        setCoverPhoto(url);
+        showToast('📸 Foto cover berhasil diunggah!');
+      }
+    } catch (err) {
+      alert('Gagal mengunggah foto: ' + err.message);
+    } finally {
+      setIsUploadingCover(false);
+    }
+  };
+
+  // Upload Memory Photo File Handler
+  const handleMemFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingMemPhoto(true);
+    try {
+      const url = await uploadImage(file);
+      if (url) {
+        setMemPhoto(url);
+        showToast('📸 Foto kenangan berhasil diunggah!');
+      }
+    } catch (err) {
+      alert('Gagal mengunggah foto: ' + err.message);
+    } finally {
+      setIsUploadingMemPhoto(false);
+    }
   };
 
   // 1. Save Beranda Config
@@ -95,7 +135,7 @@ export default function Admin({
       date: memDate,
       location: memLocation,
       category: memCategory,
-      photo: memPhoto,
+      photo: memPhoto || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
       story: memStory,
       rating: 5
     });
@@ -279,15 +319,54 @@ export default function Admin({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-pastel-text mb-1">URL Foto Cover Polaroid Utama</label>
-                  <input
-                    type="url"
-                    value={coverPhoto}
-                    onChange={(e) => setCoverPhoto(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full p-3 rounded-xl bg-pastel-canvas border border-pastel-pink/30 text-xs font-medium text-pastel-text"
-                  />
+                {/* Upload Foto Cover dari Device & URL */}
+                <div className="p-4 rounded-2xl bg-pastel-canvas border border-pastel-pink/30 space-y-3">
+                  <label className="block text-xs font-bold text-pastel-text flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-pastel-lavender" /> Foto Cover Polaroid Beranda
+                    </span>
+                    {coverPhoto && (
+                      <span className="text-[10px] text-emerald-600 font-bold font-mono">✓ Gambar Terpasang</span>
+                    )}
+                  </label>
+
+                  {/* Device File Input */}
+                  <div className="flex items-center gap-3">
+                    <label className="flex-1 cursor-pointer bg-white px-4 py-2.5 rounded-xl border-2 border-dashed border-pastel-pink/40 hover:border-pastel-lavender flex items-center justify-center gap-2 text-xs font-headline font-bold text-pastel-lavender-dark transition-all">
+                      {isUploadingCover ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-pastel-pink" />
+                          <span>Mengunggah Foto ke Firebase...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 text-pastel-pink" />
+                          <span>📁 Pilih Foto dari HP / Perangkat</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverFileChange}
+                        disabled={isUploadingCover}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Image Preview & URL fallback */}
+                  {coverPhoto && (
+                    <div className="flex items-center gap-3 pt-2">
+                      <img src={coverPhoto} alt="Cover Preview" className="w-16 h-16 rounded-xl object-cover border-2 border-pastel-pink/40 shadow-sm" />
+                      <input
+                        type="text"
+                        value={coverPhoto}
+                        onChange={(e) => setCoverPhoto(e.target.value)}
+                        placeholder="Atau tempelkan URL Foto..."
+                        className="flex-1 p-2 rounded-xl bg-white border border-pastel-pink/30 text-[11px] font-mono text-pastel-text"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -387,15 +466,49 @@ export default function Admin({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-pastel-text mb-1">URL Foto Polaroid</label>
-                  <input
-                    type="url"
-                    value={memPhoto}
-                    onChange={(e) => setMemPhoto(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-medium text-pastel-text"
-                  />
+                {/* Upload Foto Polaroid dari Device & URL */}
+                <div className="p-3.5 rounded-xl bg-white border border-pastel-pink/30 space-y-2">
+                  <label className="block text-xs font-bold text-pastel-text flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-pastel-lavender" /> Foto Polaroid Momen
+                    </span>
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    <label className="flex-1 cursor-pointer bg-pastel-canvas px-3 py-2 rounded-xl border border-dashed border-pastel-pink/40 hover:border-pastel-lavender flex items-center justify-center gap-2 text-xs font-headline font-bold text-pastel-lavender-dark transition-all">
+                      {isUploadingMemPhoto ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-pastel-pink" />
+                          <span>Mengunggah Foto ke Firebase...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 text-pastel-pink" />
+                          <span>📁 Upload Foto dari Device</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleMemFileChange}
+                        disabled={isUploadingMemPhoto}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {memPhoto && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <img src={memPhoto} alt="Memory Preview" className="w-12 h-12 rounded-lg object-cover border border-amber-900/10" />
+                      <input
+                        type="text"
+                        value={memPhoto}
+                        onChange={(e) => setMemPhoto(e.target.value)}
+                        placeholder="URL Foto..."
+                        className="flex-1 p-1.5 rounded-lg bg-gray-50 border border-gray-200 text-[10px] font-mono text-pastel-text"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>

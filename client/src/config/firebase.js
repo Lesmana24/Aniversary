@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // Firebase web app configuration from environment variables
 const firebaseConfig = {
@@ -13,15 +14,17 @@ const firebaseConfig = {
 };
 
 let db = null;
+let storage = null;
 let isFirebaseConfigured = false;
 
 try {
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
+  storage = getStorage(app);
   isFirebaseConfigured = true;
-  console.log("🔥 Firebase Client SDK initialized successfully!");
+  console.log("🔥 Firebase Client & Storage SDK initialized successfully!");
 } catch (err) {
   console.warn("⚠️ Firebase Client SDK initialization skipped/failed:", err.message);
 }
 
-export { db, isFirebaseConfigured };
+export { db, storage, isFirebaseConfigured };
