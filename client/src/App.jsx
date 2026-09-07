@@ -210,26 +210,6 @@ export default function App() {
           </>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-dashed border-pastel-pink/30 py-6 px-4 text-center text-xs text-pastel-text/70">
-        <p className="font-headline font-bold text-pastel-lavender-dark mb-1">
-          Lesmana & Nafla (Bebe) — 2nd Anniversary Interactive Scrapbook 💖
-        </p>
-        <div className="flex items-center justify-center gap-3 mt-1 text-[11px]">
-          <span>Built with React JS, Node.js & Google Firebase</span>
-          <span>•</span>
-          {isAuthenticated ? (
-            <button onClick={handleLogout} className="text-rose-600 hover:underline font-bold">
-              Logout Admin
-            </button>
-          ) : (
-            <button onClick={() => handleTabChange('login')} className="text-pastel-lavender-dark hover:underline font-bold">
-              🔒 Portal Login Admin
-            </button>
-          )}
-        </div>
-      </footer>
     </div>
   );
 }
