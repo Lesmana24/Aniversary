@@ -25,8 +25,13 @@ import {
   addMemory,
   deleteMemory,
   resetVouchers,
+  addVoucher,
+  deleteVoucher,
   updateLetter,
   addWish,
+  deleteWish,
+  addQuiz,
+  deleteQuiz,
   uploadImage
 } from '../services/api';
 
@@ -70,6 +75,22 @@ export default function Admin({
   // New Wish State
   const [wishTitle, setWishTitle] = useState('');
   const [wishCategory, setWishCategory] = useState('Outdoor');
+
+  // New Voucher Form State
+  const [vouchTitle, setVouchTitle] = useState('');
+  const [vouchDesc, setVouchDesc] = useState('');
+  const [vouchCode, setVouchCode] = useState('');
+  const [vouchBadge, setVouchBadge] = useState('Special Gift');
+  const [vouchExpiry, setVouchExpiry] = useState('Berlaku Selamanya');
+
+  // New Quiz Form State
+  const [quizQuestion, setQuizQuestion] = useState('');
+  const [quizOpt0, setQuizOpt0] = useState('');
+  const [quizOpt1, setQuizOpt1] = useState('');
+  const [quizOpt2, setQuizOpt2] = useState('');
+  const [quizOpt3, setQuizOpt3] = useState('');
+  const [quizAnswer, setQuizAnswer] = useState(0);
+  const [quizExplanation, setQuizExplanation] = useState('');
 
   const showToast = (msg) => {
     setNotification(msg);
@@ -180,7 +201,34 @@ export default function Admin({
     }
   };
 
-  // 6. Add Wish Item
+  // 6. Add Voucher
+  const handleAddVoucher = async (e) => {
+    e.preventDefault();
+    if (!vouchTitle.trim()) return;
+    await addVoucher({
+      title: vouchTitle,
+      description: vouchDesc,
+      code: vouchCode || ('BEBE-GIFT-' + Date.now().toString().slice(-4)),
+      badge: vouchBadge,
+      expiry: vouchExpiry
+    });
+    setVouchTitle('');
+    setVouchDesc('');
+    setVouchCode('');
+    onRefreshData();
+    showToast('🎟️ Voucher kartu gosok baru ditambahkan!');
+  };
+
+  // 7. Delete Voucher
+  const handleDeleteVoucher = async (id) => {
+    if (window.confirm('Hapus voucher hadiah ini?')) {
+      await deleteVoucher(id);
+      onRefreshData();
+      showToast('🗑️ Voucher hadiah dihapus');
+    }
+  };
+
+  // 8. Add Wish Item
   const handleAddWishItem = async (e) => {
     e.preventDefault();
     if (!wishTitle.trim()) return;
@@ -190,12 +238,51 @@ export default function Admin({
     showToast('🌟 Impian baru berhasil ditambahkan!');
   };
 
+  // 9. Delete Wish Item
+  const handleDeleteWishItem = async (id) => {
+    if (window.confirm('Hapus impian ini?')) {
+      await deleteWish(id);
+      onRefreshData();
+      showToast('🗑️ Impian berhasil dihapus');
+    }
+  };
+
+  // 10. Add Quiz Question
+  const handleAddQuiz = async (e) => {
+    e.preventDefault();
+    if (!quizQuestion.trim() || !quizOpt0.trim() || !quizOpt1.trim()) return;
+    await addQuiz({
+      question: quizQuestion,
+      options: [quizOpt0, quizOpt1, quizOpt2 || 'Pilihan C', quizOpt3 || 'Pilihan D'],
+      answer: parseInt(quizAnswer, 10),
+      explanation: quizExplanation
+    });
+    setQuizQuestion('');
+    setQuizOpt0('');
+    setQuizOpt1('');
+    setQuizOpt2('');
+    setQuizOpt3('');
+    setQuizExplanation('');
+    setQuizAnswer(0);
+    onRefreshData();
+    showToast('💡 Soal Kuis Trivia baru berhasil ditambahkan!');
+  };
+
+  // 11. Delete Quiz Question
+  const handleDeleteQuiz = async (id) => {
+    if (window.confirm('Hapus soal kuis trivia ini?')) {
+      await deleteQuiz(id);
+      onRefreshData();
+      showToast('🗑️ Soal kuis dihapus');
+    }
+  };
+
   const tabs = [
     { id: 'beranda', label: '🏠 Edit Beranda', desc: 'Judul, Foto Cover & Impian' },
     { id: 'timeline', label: '📖 Edit Flip Book', desc: 'Daftar Kenangan Kencan' },
     { id: 'vouchers', label: '🎟️ Kartu Gosok', desc: 'Voucher & Reset Hadiah' },
     { id: 'letter', label: '💌 Surat & Suara', desc: 'Pesan Suara & Teks Surat' },
-    { id: 'quiz', label: '💡 Kuis Trivia', desc: 'Preview Soal Trivia Cinta' },
+    { id: 'quiz', label: '💡 Kuis Trivia', desc: 'Kelola Soal Trivia Cinta' },
   ];
 
   return (
@@ -379,8 +466,8 @@ export default function Admin({
               </form>
 
               {/* Add Wish Item Form */}
-              <div className="pt-4 border-t border-dashed border-pastel-pink/30">
-                <h3 className="font-headline font-bold text-sm text-pastel-pink-dark mb-3">
+              <div className="pt-4 border-t border-dashed border-pastel-pink/30 space-y-3">
+                <h3 className="font-headline font-bold text-sm text-pastel-pink-dark">
                   + Tambah Impian Baru (Year 3 Wishlist)
                 </h3>
                 <form onSubmit={handleAddWishItem} className="flex gap-2">
@@ -398,6 +485,24 @@ export default function Admin({
                     Tambah Impian
                   </button>
                 </form>
+
+                {/* List Wish Items with Delete Button */}
+                <div className="space-y-2 pt-2">
+                  {wishlist && wishlist.map((w) => (
+                    <div key={w.id} className="p-2.5 rounded-xl bg-pastel-canvas border border-pastel-pink/20 flex items-center justify-between gap-2 text-xs">
+                      <span className={`font-medium ${w.completed ? 'line-through text-pastel-text/50' : 'text-pastel-text'}`}>
+                        🌟 {w.title} ({w.category || 'General'})
+                      </span>
+                      <button
+                        onClick={() => handleDeleteWishItem(w.id)}
+                        className="p-1.5 rounded-lg bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white transition-colors"
+                        title="Hapus Impian"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -566,42 +671,123 @@ export default function Admin({
                 <h2 className="font-headline font-extrabold text-xl text-pastel-lavender-dark flex items-center gap-2">
                   <span>🎟️ Pengaturan Kartu Gosok Hadiah</span>
                 </h2>
-                <p className="text-xs text-pastel-text mt-0.5">Kelola status voucher gosok dan reset kartu.</p>
+                <p className="text-xs text-pastel-text mt-0.5">Tambah, hapus, kelola voucher gosok & reset status kartu.</p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-pastel-canvas border border-pastel-pink/30 text-center space-y-4">
-                <div className="w-14 h-14 rounded-full bg-pastel-pink/20 text-pastel-pink-dark mx-auto flex items-center justify-center border border-pastel-pink/40 shadow-sticker">
-                  <RefreshCw className="w-6 h-6 text-pastel-pink" />
+              {/* Form Tambah Voucher Baru */}
+              <form onSubmit={handleAddVoucher} className="p-4 rounded-2xl bg-pastel-canvas border border-pastel-pink/30 space-y-3">
+                <h3 className="font-headline font-bold text-sm text-pastel-lavender-dark">
+                  + Form Tambah Voucher Hadiah Baru
+                </h3>
+                <div>
+                  <label className="block text-xs font-bold text-pastel-text mb-1">Judul Voucher Hadiah</label>
+                  <input
+                    type="text"
+                    required
+                    value={vouchTitle}
+                    onChange={(e) => setVouchTitle(e.target.value)}
+                    placeholder="Contoh: Tiket Dinner Romantis Bebas Pilih Tempat 🎟️"
+                    className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-medium text-pastel-text"
+                  />
                 </div>
                 <div>
-                  <h3 className="font-headline font-extrabold text-base text-pastel-lavender-dark">
-                    Reset Semua Status Kartu Gosok
-                  </h3>
-                  <p className="text-xs text-pastel-text max-w-md mx-auto mt-1">
-                    Jika Bebe sudah menggosok semua kartu dan Lesmana ingin mereset kembali agar bisa digosok ulang, tekan tombol di bawah ini.
-                  </p>
+                  <label className="block text-xs font-bold text-pastel-text mb-1">Deskripsi / Pesan Hadiah</label>
+                  <textarea
+                    rows="2"
+                    value={vouchDesc}
+                    onChange={(e) => setVouchDesc(e.target.value)}
+                    placeholder="Contoh: Bebas pilih restoran mana aja tanpa perdebatan!"
+                    className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-medium text-pastel-text"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-pastel-text mb-1">Kode Voucher</label>
+                    <input
+                      type="text"
+                      value={vouchCode}
+                      onChange={(e) => setVouchCode(e.target.value)}
+                      placeholder="BEBE-ROMANTIC-2026"
+                      className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-mono font-medium text-pastel-text"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-pastel-text mb-1">Label Badge</label>
+                    <input
+                      type="text"
+                      value={vouchBadge}
+                      onChange={(e) => setVouchBadge(e.target.value)}
+                      placeholder="Special Gift"
+                      className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-medium text-pastel-text"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-pastel-text mb-1">Masa Berlaku</label>
+                    <input
+                      type="text"
+                      value={vouchExpiry}
+                      onChange={(e) => setVouchExpiry(e.target.value)}
+                      placeholder="Berlaku Selamanya"
+                      className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-medium text-pastel-text"
+                    />
+                  </div>
                 </div>
                 <button
+                  type="submit"
+                  className="w-full py-3 rounded-2xl bg-pastel-lavender text-white font-headline font-bold text-xs shadow-squish hover:scale-[1.01] active:scale-95 transition-all btn-squish flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Voucher Hadiah Ke Kartu Gosok</span>
+                </button>
+              </form>
+
+              {/* Reset All Vouchers Button */}
+              <div className="p-4 rounded-2xl bg-pastel-canvas border border-pastel-pink/30 text-center space-y-3">
+                <div className="flex items-center justify-center gap-2 font-headline font-bold text-xs text-pastel-lavender-dark">
+                  <RefreshCw className="w-4 h-4 text-pastel-pink" />
+                  <span>Reset Status Penggosokan</span>
+                </div>
+                <p className="text-[11px] text-pastel-text/80">
+                  Jika Bebe sudah menggosok semua voucher dan kamu ingin mengunci ulang agar bisa digosok lagi:
+                </p>
+                <button
                   onClick={handleResetVouchers}
-                  className="px-6 py-3 rounded-2xl bg-pastel-pink text-white font-headline font-bold text-xs shadow-squish-pink hover:scale-105 active:scale-95 transition-all btn-squish"
+                  className="px-5 py-2.5 rounded-xl bg-pastel-pink text-white font-headline font-bold text-xs shadow-squish-pink hover:scale-105 active:scale-95 transition-all"
                 >
                   Reset Semua Kupon Sekarang
                 </button>
               </div>
 
-              {/* Current Vouchers Preview */}
+              {/* Current Vouchers List with Delete Button */}
               <div className="space-y-3">
-                <h3 className="font-headline font-bold text-sm text-pastel-text">Daftar Voucher Hadiah saat ini:</h3>
+                <h3 className="font-headline font-bold text-sm text-pastel-text">
+                  Daftar Voucher Hadiah Saat Ini ({vouchers?.length || 0}):
+                </h3>
                 <div className="space-y-2">
                   {vouchers && vouchers.map((v) => (
-                    <div key={v.id} className="p-3.5 rounded-2xl bg-white border border-pastel-pink/30 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-headline font-bold text-pastel-lavender-dark block">{v.title}</span>
-                        <span className="text-[10px] text-pastel-text/70">{v.description}</span>
+                    <div key={v.id} className="p-3.5 rounded-2xl bg-white border border-pastel-pink/30 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-headline font-bold text-pastel-lavender-dark">{v.title}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-pastel-pink/20 text-pastel-pink-dark font-mono text-[10px] font-bold">
+                            {v.badge || 'Gift'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-pastel-text/70 mt-0.5">{v.description}</p>
+                        <p className="text-[10px] font-mono text-pastel-text/50 mt-0.5">Kode: {v.code} | {v.expiry}</p>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full font-mono font-bold text-[10px] ${v.claimed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {v.claimed ? 'Tergosok / Terklaim' : '🔒 Belum Tergosok'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded-full font-mono font-bold text-[10px] ${v.claimed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {v.claimed ? 'Tergosok' : '🔒 Belum Tergosok'}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteVoucher(v.id)}
+                          className="p-2 rounded-xl bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white transition-colors"
+                          title="Hapus Voucher"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -700,30 +886,142 @@ export default function Admin({
             <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-scrapbook border-2 border-dashed border-pastel-lavender/40 space-y-6">
               <div className="border-b border-dashed border-pastel-pink/30 pb-3">
                 <h2 className="font-headline font-extrabold text-xl text-pastel-lavender-dark flex items-center gap-2">
-                  <span>💡 Preview Soal Kuis Trivia Cinta</span>
+                  <span>💡 Pengaturan Kuis Trivia Cinta</span>
                 </h2>
-                <p className="text-xs text-pastel-text mt-0.5">Daftar soal-soal kuis trivia cinta saat ini.</p>
+                <p className="text-xs text-pastel-text mt-0.5">Tambah, hapus, dan kelola daftar soal kuis trivia cinta.</p>
               </div>
 
-              <div className="space-y-3">
-                {quiz && quiz.map((q, i) => (
-                  <div key={q.id || i} className="p-4 rounded-2xl bg-pastel-canvas border border-pastel-pink/30 space-y-2 text-xs">
-                    <div className="flex items-center justify-between font-headline font-bold text-pastel-lavender-dark">
-                      <span>Soal {i + 1}: {q.question}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 pt-1">
-                      {q.options?.map((opt, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-2 rounded-xl border ${idx === q.answer ? 'bg-emerald-100 border-emerald-400 font-bold text-emerald-800' : 'bg-white border-gray-200 text-pastel-text'}`}
-                        >
-                          {opt} {idx === q.answer ? '✓ (Kunci)' : ''}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-pastel-text/70 italic pt-1">💡 {q.explanation}</p>
+              {/* Form Tambah Soal Kuis Baru */}
+              <form onSubmit={handleAddQuiz} className="p-4 rounded-2xl bg-pastel-canvas border border-pastel-pink/30 space-y-3">
+                <h3 className="font-headline font-bold text-sm text-pastel-lavender-dark">
+                  + Form Tambah Soal Kuis Baru
+                </h3>
+                <div>
+                  <label className="block text-xs font-bold text-pastel-text mb-1">Pertanyaan Kuis</label>
+                  <input
+                    type="text"
+                    required
+                    value={quizQuestion}
+                    onChange={(e) => setQuizQuestion(e.target.value)}
+                    placeholder="Contoh: Apa makanan kesukaan Bebe saat kita kencan di Nako?"
+                    className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-medium text-pastel-text"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-pastel-text mb-1">Pilihan A (Index 0)</label>
+                    <input
+                      type="text"
+                      required
+                      value={quizOpt0}
+                      onChange={(e) => setQuizOpt0(e.target.value)}
+                      placeholder="Pilihan A"
+                      className="w-full p-2 rounded-xl bg-white border border-pastel-pink/30 text-xs text-pastel-text"
+                    />
                   </div>
-                ))}
+                  <div>
+                    <label className="block text-[11px] font-bold text-pastel-text mb-1">Pilihan B (Index 1)</label>
+                    <input
+                      type="text"
+                      required
+                      value={quizOpt1}
+                      onChange={(e) => setQuizOpt1(e.target.value)}
+                      placeholder="Pilihan B"
+                      className="w-full p-2 rounded-xl bg-white border border-pastel-pink/30 text-xs text-pastel-text"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-pastel-text mb-1">Pilihan C (Index 2)</label>
+                    <input
+                      type="text"
+                      value={quizOpt2}
+                      onChange={(e) => setQuizOpt2(e.target.value)}
+                      placeholder="Pilihan C"
+                      className="w-full p-2 rounded-xl bg-white border border-pastel-pink/30 text-xs text-pastel-text"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-pastel-text mb-1">Pilihan D (Index 3)</label>
+                    <input
+                      type="text"
+                      value={quizOpt3}
+                      onChange={(e) => setQuizOpt3(e.target.value)}
+                      placeholder="Pilihan D"
+                      className="w-full p-2 rounded-xl bg-white border border-pastel-pink/30 text-xs text-pastel-text"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-pastel-text mb-1">Kunci Jawaban Benar</label>
+                    <select
+                      value={quizAnswer}
+                      onChange={(e) => setQuizAnswer(e.target.value)}
+                      className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs font-bold text-emerald-700"
+                    >
+                      <option value={0}>Pilihan A (Index 0)</option>
+                      <option value={1}>Pilihan B (Index 1)</option>
+                      <option value={2}>Pilihan C (Index 2)</option>
+                      <option value={3}>Pilihan D (Index 3)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-pastel-text mb-1">Penjelasan Jawaban (Pesan Manis)</label>
+                    <input
+                      type="text"
+                      value={quizExplanation}
+                      onChange={(e) => setQuizExplanation(e.target.value)}
+                      placeholder="Pintar! Kamu emang paling ingat momen ini ❤️"
+                      className="w-full p-2.5 rounded-xl bg-white border border-pastel-pink/30 text-xs text-pastel-text"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-2xl bg-pastel-lavender text-white font-headline font-bold text-xs shadow-squish hover:scale-[1.01] active:scale-95 transition-all btn-squish flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Simpan Soal Kuis Trivia Baru</span>
+                </button>
+              </form>
+
+              {/* Current Quiz Questions List with Delete Button */}
+              <div className="space-y-3">
+                <h3 className="font-headline font-bold text-sm text-pastel-text">
+                  Daftar Soal Kuis Trivia Saat Ini ({quiz?.length || 0}):
+                </h3>
+                <div className="space-y-3">
+                  {quiz && quiz.map((q, i) => (
+                    <div key={q.id || i} className="p-4 rounded-2xl bg-pastel-canvas border border-pastel-pink/30 space-y-2 text-xs relative">
+                      <div className="flex items-center justify-between font-headline font-bold text-pastel-lavender-dark">
+                        <span>Soal {i + 1}: {q.question}</span>
+                        <button
+                          onClick={() => handleDeleteQuiz(q.id)}
+                          className="p-1.5 rounded-lg bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white transition-colors"
+                          title="Hapus Soal"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5 pt-1">
+                        {q.options?.map((opt, idx) => (
+                          <div
+                            key={idx}
+                            className={`p-2 rounded-xl border ${idx === q.answer ? 'bg-emerald-100 border-emerald-400 font-bold text-emerald-800' : 'bg-white border-gray-200 text-pastel-text'}`}
+                          >
+                            {opt} {idx === q.answer ? '✓ (Kunci)' : ''}
+                          </div>
+                        ))}
+                      </div>
+                      {q.explanation && (
+                        <p className="text-[11px] text-pastel-text/70 italic pt-1">💡 {q.explanation}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

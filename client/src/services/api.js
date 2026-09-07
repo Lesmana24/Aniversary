@@ -292,6 +292,22 @@ export const toggleWish = async (id) => {
   return { success: true };
 };
 
+export const deleteWish = async (id) => {
+  const apiRes = await safeFetch(`${API_BASE}/wishlist/${id}`, {
+    method: 'DELETE'
+  });
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'wishlist', id));
+    } catch (e) {
+      console.warn("Firestore deleteWish error:", e);
+    }
+  }
+  return { success: true };
+};
+
 // 5. Memories
 export const fetchMemories = async () => {
   const apiRes = await safeFetch(`${API_BASE}/memories`);
@@ -395,6 +411,50 @@ export const fetchVouchers = async () => {
   return { success: true, mode: 'local', data: DEFAULT_DATA.vouchers };
 };
 
+export const addVoucher = async (data) => {
+  const apiRes = await safeFetch(`${API_BASE}/vouchers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (apiRes) return apiRes;
+
+  const newVoucher = {
+    id: 'vouch-' + Date.now(),
+    title: data.title || 'Voucher Hadiah',
+    description: data.description || '',
+    code: data.code || 'HADIAH-BEBE-' + Date.now(),
+    expiry: data.expiry || 'Berlaku Selamanya',
+    claimed: false,
+    badge: data.badge || 'Special Gift'
+  };
+
+  if (db) {
+    try {
+      await setDoc(doc(db, 'vouchers', newVoucher.id), newVoucher);
+    } catch (e) {
+      console.warn("Firestore addVoucher error:", e);
+    }
+  }
+  return { success: true, data: newVoucher };
+};
+
+export const deleteVoucher = async (id) => {
+  const apiRes = await safeFetch(`${API_BASE}/vouchers/${id}`, {
+    method: 'DELETE'
+  });
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'vouchers', id));
+    } catch (e) {
+      console.warn("Firestore deleteVoucher error:", e);
+    }
+  }
+  return { success: true };
+};
+
 export const claimVoucher = async (id) => {
   const apiRes = await safeFetch(`${API_BASE}/vouchers/${id}/claim`, {
     method: 'POST'
@@ -457,6 +517,48 @@ export const fetchQuiz = async () => {
     }
   }
   return { success: true, mode: 'local', data: DEFAULT_DATA.quiz };
+};
+
+export const addQuiz = async (data) => {
+  const apiRes = await safeFetch(`${API_BASE}/quiz`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (apiRes) return apiRes;
+
+  const newQuiz = {
+    id: 'q-' + Date.now(),
+    question: data.question || '',
+    options: data.options || ['', '', '', ''],
+    answer: data.answer ?? 0,
+    explanation: data.explanation || ''
+  };
+
+  if (db) {
+    try {
+      await setDoc(doc(db, 'quiz', newQuiz.id), newQuiz);
+    } catch (e) {
+      console.warn("Firestore addQuiz error:", e);
+    }
+  }
+  return { success: true, data: newQuiz };
+};
+
+export const deleteQuiz = async (id) => {
+  const apiRes = await safeFetch(`${API_BASE}/quiz/${id}`, {
+    method: 'DELETE'
+  });
+  if (apiRes) return apiRes;
+
+  if (db) {
+    try {
+      await deleteDoc(doc(db, 'quiz', id));
+    } catch (e) {
+      console.warn("Firestore deleteQuiz error:", e);
+    }
+  }
+  return { success: true };
 };
 
 // 8. Letter
