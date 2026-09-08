@@ -1,14 +1,38 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, Disc, Music, Heart } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Disc, Music, Heart, Youtube } from 'lucide-react';
+
+export function getYouTubeVideoId(url) {
+  if (!url) return null;
+  const str = url.trim();
+  if (str.length === 11 && !str.includes('/') && !str.includes('.')) return str;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = str.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+}
 
 export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [totalDuration, setTotalDuration] = useState(0);
+  const [totalDuration, setTotalDuration] = useState(180);
   const audioRef = useRef(null);
+  const iframeRef = useRef(null);
+
+  const youtubeId = getYouTubeVideoId(audioUrl);
 
   const togglePlay = () => {
+    if (youtubeId) {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        const command = isPlaying ? 'pauseVideo' : 'playVideo';
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: command, args: '' }),
+          '*'
+        );
+      }
+      setIsPlaying(!isPlaying);
+      return;
+    }
+
     if (!audioRef.current) return;
     if (isPlaying) {
       audioRef.current.pause();
@@ -19,15 +43,40 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
   };
 
   const toggleMute = () => {
+    if (youtubeId) {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        const command = isMuted ? 'unMute' : 'mute';
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: command, args: '' }),
+          '*'
+        );
+      }
+      setIsMuted(!isMuted);
+      return;
+    }
+
     if (!audioRef.current) return;
     audioRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
   };
 
+  // Timer counter for YouTube playback visualization
+  useEffect(() => {
+    let interval = null;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
   const onTimeUpdate = () => {
-    if (audioRef.current) {
+    if (!youtubeId && audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
-      setTotalDuration(audioRef.current.duration || 0);
+      setTotalDuration(audioRef.current.duration || 180);
     }
   };
 
@@ -40,9 +89,9 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
 
   const handleSeek = (e) => {
     const newTime = parseFloat(e.target.value);
-    if (audioRef.current) {
+    setCurrentTime(newTime);
+    if (!youtubeId && audioRef.current) {
       audioRef.current.currentTime = newTime;
-      setCurrentTime(newTime);
     }
   };
 
@@ -54,13 +103,17 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
       {/* Cassette Tape Header */}
       <div className="flex items-center justify-between mb-4 z-10 relative">
         <div className="flex items-center gap-2">
-          <Music className="w-5 h-5 text-pastel-pink animate-pulse" />
+          {youtubeId ? (
+            <Youtube className="w-5 h-5 text-red-400 animate-pulse" />
+          ) : (
+            <Music className="w-5 h-5 text-pastel-pink animate-pulse" />
+          )}
           <span className="font-headline font-bold text-xs uppercase tracking-widest text-pastel-pink">
-            VINTAGE STEREO CASSETTE
+            {youtubeId ? 'YOUTUBE STEREO PLAYER' : 'VINTAGE STEREO CASSETTE'}
           </span>
         </div>
         <span className="text-[10px] font-mono bg-white/10 px-2 py-0.5 rounded-full text-pastel-custard">
-          SIDE A • HIGH FIDELITY
+          {youtubeId ? 'YT AUDIO SOURCE' : 'SIDE A • HIGH FIDELITY'}
         </span>
       </div>
 
@@ -75,8 +128,8 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
           </div>
         </div>
 
-        {/* Tape View Window */}
-        <div className="flex-1 mx-4 h-12 bg-amber-950/40 rounded-lg border border-amber-500/20 flex items-center justify-center px-3 relative overflow-hidden">
+        {/* Tape View Window / Equalizer / YT Frame */}
+        <div className="flex-1 mx-4 h-14 bg-amber-950/40 rounded-lg border border-amber-500/20 flex items-center justify-center px-2 relative overflow-hidden">
           <div className="w-full flex items-center justify-center gap-1">
             {[...Array(12)].map((_, i) => (
               <div
@@ -109,7 +162,7 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
           {title || "Pesan Suara Spesial dari Lesmana untuk Bebe 🎧"}
         </h4>
         <p className="text-[11px] text-white/70 font-mono mt-0.5">
-          {formatTime(currentTime)} / {formatTime(totalDuration || 150)}
+          {formatTime(currentTime)} / {formatTime(totalDuration)}
         </p>
       </div>
 
@@ -118,7 +171,7 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
         <input
           type="range"
           min="0"
-          max={totalDuration || 150}
+          max={totalDuration}
           value={currentTime}
           onChange={handleSeek}
           className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-pastel-pink"
@@ -146,13 +199,26 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
         </span>
       </div>
 
-      {/* HTML5 Audio element */}
-      <audio
-        ref={audioRef}
-        src={audioUrl || "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3"}
-        onTimeUpdate={onTimeUpdate}
-        onEnded={() => setIsPlaying(false)}
-      />
+      {/* Hidden YouTube Iframe Player for YouTube Links */}
+      {youtubeId ? (
+        <iframe
+          ref={iframeRef}
+          className="hidden"
+          width="100"
+          height="100"
+          src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&autoplay=0&controls=0`}
+          title="YouTube Audio Player"
+          allow="autoplay"
+        />
+      ) : (
+        /* Standard HTML5 Audio for Direct MP3 Links */
+        <audio
+          ref={audioRef}
+          src={audioUrl || "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3"}
+          onTimeUpdate={onTimeUpdate}
+          onEnded={() => setIsPlaying(false)}
+        />
+      )}
     </div>
   );
 }

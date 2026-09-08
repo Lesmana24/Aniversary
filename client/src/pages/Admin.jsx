@@ -849,12 +849,12 @@ export default function Admin({
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
-                    <label className="block text-xs font-bold text-pastel-text mb-1">URL File MP3 Voice Note / Lagu</label>
+                    <label className="block text-xs font-bold text-pastel-text mb-1">Link YouTube atau URL File MP3 Audio / Lagu 🎵</label>
                     <input
                       type="url"
                       value={audioUrl}
                       onChange={(e) => setAudioUrl(e.target.value)}
-                      placeholder="https://cdn.pixabay.com/..."
+                      placeholder="https://www.youtube.com/watch?v=... atau URL MP3"
                       className="w-full p-3 rounded-xl bg-pastel-canvas border border-pastel-pink/30 text-xs font-medium text-pastel-text"
                     />
                   </div>
