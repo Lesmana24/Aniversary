@@ -135,33 +135,12 @@ const compressImage = (file, maxWidth = 800, quality = 0.75) => {
   });
 };
 
-// 1. Upload Image Helper (Firebase Storage with 3s timeout -> Compressed Base64 fallback)
+// 1. Upload Image Helper (Fast Instant Compressed Image Uploader)
 export const uploadImage = async (file) => {
   if (!file) return null;
 
-  // Try Firebase Storage with 3s timeout to catch CORS preflight hangs immediately
-  if (storage) {
-    try {
-      const fileName = `scrapbook_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      const storageRef = ref(storage, `memories/${fileName}`);
-
-      const uploadTask = uploadBytes(storageRef, file).then(async (snapshot) => {
-        return await getDownloadURL(snapshot.ref);
-      });
-
-      const timeoutTask = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Storage timeout or CORS policy restriction")), 3000)
-      );
-
-      const downloadURL = await Promise.race([uploadTask, timeoutTask]);
-      if (downloadURL) return downloadURL;
-    } catch (err) {
-      console.warn("Firebase Storage CORS/upload notice, falling back to compressed Base64:", err.message);
-    }
-  }
-
-  // Fast client-side image compression fallback
   try {
+    // Compress image to optimized 800px JPEG (~50-80KB) for instant upload & zero CORS errors
     const compressedDataUrl = await compressImage(file, 800, 0.75);
     return compressedDataUrl;
   } catch (e) {
