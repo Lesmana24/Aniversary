@@ -102,27 +102,76 @@ async function safeFetch(url, options) {
   return null;
 }
 
-// 1. Upload Image Helper (Firebase Storage -> Base64 fallback)
-export const uploadImage = async (file) => {
-  if (!file) return null;
-  try {
-    if (storage) {
-      const fileName = `scrapbook_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      const storageRef = ref(storage, `memories/${fileName}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
-    }
-  } catch (err) {
-    console.warn("Firebase storage upload warning:", err.message);
-  }
-
+// Client-side image compressor (converts large photos to optimized ~50-100KB Data URLs)
+const compressImage = (file, maxWidth = 800, quality = 0.75) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
     reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
   });
+};
+
+// 1. Upload Image Helper (Firebase Storage with 3s timeout -> Compressed Base64 fallback)
+export const uploadImage = async (file) => {
+  if (!file) return null;
+
+  // Try Firebase Storage with 3s timeout to catch CORS preflight hangs immediately
+  if (storage) {
+    try {
+      const fileName = `scrapbook_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const storageRef = ref(storage, `memories/${fileName}`);
+
+      const uploadTask = uploadBytes(storageRef, file).then(async (snapshot) => {
+        return await getDownloadURL(snapshot.ref);
+      });
+
+      const timeoutTask = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Storage timeout or CORS policy restriction")), 3000)
+      );
+
+      const downloadURL = await Promise.race([uploadTask, timeoutTask]);
+      if (downloadURL) return downloadURL;
+    } catch (err) {
+      console.warn("Firebase Storage CORS/upload notice, falling back to compressed Base64:", err.message);
+    }
+  }
+
+  // Fast client-side image compression fallback
+  try {
+    const compressedDataUrl = await compressImage(file, 800, 0.75);
+    return compressedDataUrl;
+  } catch (e) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  }
 };
 
 // 2. Admin Auth
