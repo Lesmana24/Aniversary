@@ -32,6 +32,8 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
   const [totalDuration, setTotalDuration] = useState(initialDuration);
   const audioRef = useRef(null);
   const iframeRef = useRef(null);
+  const playerRef = useRef(null);
+  const containerIdRef = useRef(`yt-player-${Math.random().toString(36).substring(2, 9)}`);
 
   const youtubeId = getYouTubeVideoId(audioUrl);
 
@@ -43,16 +45,123 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
     }
   }, [duration]);
 
+  // Load YouTube IFrame API dynamically for reliable YouTube audio tracking
+  useEffect(() => {
+    if (!youtubeId) return;
+
+    let playerInstance = null;
+
+    const initYTPlayer = () => {
+      if (!window.YT || !window.YT.Player) return;
+      try {
+        playerInstance = new window.YT.Player(containerIdRef.current, {
+          height: '0',
+          width: '0',
+          videoId: youtubeId,
+          playerVars: {
+            autoplay: 0,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            rel: 0,
+            origin: window.location.origin
+          },
+          events: {
+            onReady: (event) => {
+              playerRef.current = event.target;
+              if (event.target.getDuration) {
+                const dur = event.target.getDuration();
+                if (dur && dur > 0) setTotalDuration(dur);
+              }
+            },
+            onStateChange: (event) => {
+              // 1 = PLAYING, 2 = PAUSED, 0 = ENDED
+              if (event.data === 1) {
+                setIsPlaying(true);
+              } else if (event.data === 2 || event.data === 0) {
+                setIsPlaying(false);
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.warn("YouTube player init error:", e);
+      }
+    };
+
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      if (firstScriptTag && firstScriptTag.parentNode) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      } else {
+        document.head.appendChild(tag);
+      }
+
+      const existingCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (existingCallback) existingCallback();
+        initYTPlayer();
+      };
+    } else if (window.YT.Player) {
+      initYTPlayer();
+    }
+
+    return () => {
+      if (playerInstance && typeof playerInstance.destroy === 'function') {
+        try {
+          playerInstance.destroy();
+        } catch (err) {}
+      }
+      playerRef.current = null;
+    };
+  }, [youtubeId]);
+
+  // Realtime Timer for updating currentTime while playing
+  useEffect(() => {
+    let timer = null;
+    if (isPlaying) {
+      timer = setInterval(() => {
+        if (youtubeId && playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+          const time = playerRef.current.getCurrentTime();
+          if (typeof time === 'number' && time >= 0) {
+            setCurrentTime(time);
+          }
+          const dur = playerRef.current.getDuration();
+          if (typeof dur === 'number' && dur > 0) {
+            setTotalDuration(dur);
+          }
+        } else if (youtubeId) {
+          // Robust fallback timer if YT player object is initializing
+          setCurrentTime((prev) => (prev < totalDuration ? prev + 1 : prev));
+        } else if (!youtubeId && audioRef.current) {
+          setCurrentTime(audioRef.current.currentTime);
+        }
+      }, 500);
+    } else {
+      clearInterval(timer);
+    }
+    return () => clearInterval(timer);
+  }, [isPlaying, youtubeId, totalDuration]);
+
   const togglePlay = () => {
     if (youtubeId) {
-      if (iframeRef.current && iframeRef.current.contentWindow) {
+      if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+        if (isPlaying) {
+          playerRef.current.pauseVideo();
+        } else {
+          playerRef.current.playVideo();
+        }
+        setIsPlaying(!isPlaying);
+      } else if (iframeRef.current && iframeRef.current.contentWindow) {
         const command = isPlaying ? 'pauseVideo' : 'playVideo';
         iframeRef.current.contentWindow.postMessage(
           JSON.stringify({ event: 'command', func: command, args: '' }),
           '*'
         );
+        setIsPlaying(!isPlaying);
       }
-      setIsPlaying(!isPlaying);
       return;
     }
 
@@ -67,14 +176,21 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
 
   const toggleMute = () => {
     if (youtubeId) {
-      if (iframeRef.current && iframeRef.current.contentWindow) {
+      if (playerRef.current && typeof playerRef.current.mute === 'function') {
+        if (isMuted) {
+          playerRef.current.unMute();
+        } else {
+          playerRef.current.mute();
+        }
+        setIsMuted(!isMuted);
+      } else if (iframeRef.current && iframeRef.current.contentWindow) {
         const command = isMuted ? 'unMute' : 'mute';
         iframeRef.current.contentWindow.postMessage(
           JSON.stringify({ event: 'command', func: command, args: '' }),
           '*'
         );
+        setIsMuted(!isMuted);
       }
-      setIsMuted(!isMuted);
       return;
     }
 
@@ -82,32 +198,6 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
     audioRef.current.muted = !isMuted;
     setIsMuted(!isMuted);
   };
-
-  // Sync YouTube player events (realtime current time & duration) via postMessage API
-  useEffect(() => {
-    const handleMessage = (event) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data && data.event === 'infoDelivery' && data.info) {
-          if (typeof data.info.currentTime === 'number') {
-            setCurrentTime(data.info.currentTime);
-          }
-          if (typeof data.info.duration === 'number' && data.info.duration > 0) {
-            setTotalDuration(data.info.duration);
-          }
-          if (typeof data.info.playerState === 'number') {
-            if (data.info.playerState === 1) setIsPlaying(true);
-            else if (data.info.playerState === 2 || data.info.playerState === 0) setIsPlaying(false);
-          }
-        }
-      } catch (err) {
-        // ignore non-JSON messages
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
 
   const onTimeUpdate = () => {
     if (!youtubeId && audioRef.current) {
@@ -135,7 +225,9 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
     const newTime = parseFloat(e.target.value);
     setCurrentTime(newTime);
     if (youtubeId) {
-      if (iframeRef.current && iframeRef.current.contentWindow) {
+      if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+        playerRef.current.seekTo(newTime, true);
+      } else if (iframeRef.current && iframeRef.current.contentWindow) {
         iframeRef.current.contentWindow.postMessage(
           JSON.stringify({ event: 'command', func: 'seekTo', args: [newTime, true] }),
           '*'
@@ -148,6 +240,9 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
 
   return (
     <div className="relative bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-6 shadow-2xl border-4 border-pastel-lavender/40 max-w-lg mx-auto overflow-hidden">
+      {/* Hidden container for YT API initialization */}
+      <div id={containerIdRef.current} className="hidden" />
+
       {/* Background Decorative Gloss */}
       <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
 
@@ -251,7 +346,7 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
         </span>
       </div>
 
-      {/* Hidden YouTube Iframe Player for YouTube Links */}
+      {/* Fallback Hidden YouTube Iframe Player for YouTube Links */}
       {youtubeId ? (
         <iframe
           ref={iframeRef}
