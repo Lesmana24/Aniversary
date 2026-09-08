@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import HTML5FlipBook from 'react-pageflip';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -8,20 +9,32 @@ import {
   Calendar, 
   Star, 
   BookOpen, 
-  Maximize2, 
   Volume2, 
   VolumeX,
-  Volume,
   RotateCcw
 } from 'lucide-react';
 
-export default function RealFlipBook({ memories = [], onDelete }) {
-  const [currentPage, setCurrentPage] = useState(0); // 0 = Cover, 1..N = Memory spreads, N+1 = Back Cover
-  const [isFlipping, setIsFlipping] = useState(false);
-  const [flipDirection, setFlipDirection] = useState('next'); // 'next' or 'prev'
-  const [soundEnabled, setSoundEnabled] = useState(true);
+// ForwardRef Page Wrapper Component required by react-pageflip
+const Page = React.forwardRef(({ children, className = '', density = 'soft' }, ref) => {
+  return (
+    <div 
+      className={`page bg-[#fffcf7] shadow-md overflow-hidden relative ${className}`} 
+      ref={ref} 
+      data-density={density}
+    >
+      <div className="w-full h-full p-4 sm:p-6 flex flex-col justify-between select-none">
+        {children}
+      </div>
+    </div>
+  );
+});
+Page.displayName = 'Page';
 
-  const totalPages = memories.length + 2; // Cover + Memories + Back Cover
+export default function RealFlipBook({ memories = [], onDelete }) {
+  const bookRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Synthesize realistic paper rustle sound using Web Audio API
   const playPageTurnSound = useCallback(() => {
@@ -30,13 +43,13 @@ export default function RealFlipBook({ memories = [], onDelete }) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      const bufferSize = ctx.sampleRate * 0.18;
+      const bufferSize = ctx.sampleRate * 0.2;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
 
       for (let i = 0; i < bufferSize; i++) {
         const decay = Math.exp(-i / (bufferSize * 0.25));
-        data[i] = (Math.random() * 2 - 1) * decay * 0.12;
+        data[i] = (Math.random() * 2 - 1) * decay * 0.15;
       }
 
       const noise = ctx.createBufferSource();
@@ -45,11 +58,11 @@ export default function RealFlipBook({ memories = [], onDelete }) {
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(1400, ctx.currentTime);
-      filter.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.18);
+      filter.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.2);
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.35, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+      gain.gain.setValueAtTime(0.4, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
 
       noise.connect(filter);
       filter.connect(gain);
@@ -57,35 +70,28 @@ export default function RealFlipBook({ memories = [], onDelete }) {
 
       noise.start();
     } catch (e) {
-      // Ignore sound errors if audio context blocked by browser policy
+      // Ignore audio block policy warnings
     }
   }, [soundEnabled]);
 
-  const goToNextPage = useCallback(() => {
-    if (currentPage < totalPages - 1 && !isFlipping) {
-      setIsFlipping(true);
-      setFlipDirection('next');
-      playPageTurnSound();
-      setTimeout(() => {
-        setCurrentPage((prev) => prev + 1);
-        setIsFlipping(false);
-      }, 400);
-    }
-  }, [currentPage, totalPages, isFlipping, playPageTurnSound]);
+  const onPageChange = useCallback((e) => {
+    setCurrentPage(e.data);
+    playPageTurnSound();
+  }, [playPageTurnSound]);
 
-  const goToPrevPage = useCallback(() => {
-    if (currentPage > 0 && !isFlipping) {
-      setIsFlipping(true);
-      setFlipDirection('prev');
-      playPageTurnSound();
-      setTimeout(() => {
-        setCurrentPage((prev) => prev - 1);
-        setIsFlipping(false);
-      }, 400);
+  const goToNextPage = () => {
+    if (bookRef.current) {
+      bookRef.current.pageFlip().flipNext();
     }
-  }, [currentPage, isFlipping, playPageTurnSound]);
+  };
 
-  // Keyboard navigation support (Arrow keys)
+  const goToPrevPage = () => {
+    if (bookRef.current) {
+      bookRef.current.pageFlip().flipPrev();
+    }
+  };
+
+  // Keyboard Navigation (Arrow Keys)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowRight') {
@@ -96,38 +102,26 @@ export default function RealFlipBook({ memories = [], onDelete }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToNextPage, goToPrevPage]);
-
-  // Active Memory (null if on Cover or Back cover)
-  const currentMemoryIndex = currentPage - 1;
-  const activeMemory = (currentMemoryIndex >= 0 && currentMemoryIndex < memories.length)
-    ? memories[currentMemoryIndex]
-    : null;
+  }, []);
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
-      {/* Top Controls Bar */}
+    <div className="w-full max-w-5xl mx-auto space-y-4">
+      {/* Control Bar Header */}
       <div className="bg-white/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-pastel-pink/30 shadow-sm flex flex-wrap items-center justify-between gap-3">
-        {/* Page Counter & Title */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-pastel-lavender/20 text-pastel-lavender-dark flex items-center justify-center font-bold text-xs">
             <BookOpen className="w-4 h-4" />
           </div>
           <div>
             <h3 className="font-headline font-bold text-sm text-pastel-lavender-dark">
-              {currentPage === 0
-                ? 'Cover Buku Scrapbook'
-                : currentPage === totalPages - 1
-                ? 'Halaman Penutup'
-                : `Halaman ${currentPage} dari ${memories.length}`}
+              Buku Kenangan Interactive 📖
             </h3>
             <p className="text-[11px] text-pastel-text/70 font-medium">
-              Gunakan tombol navigasi, panah keyboard (← →), atau klik halaman untuk membalik.
+              Tarik atau klik sudut halaman untuk membalik seperti buku asli!
             </p>
           </div>
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center gap-2">
           {/* Sound Toggle */}
           <button
@@ -146,9 +140,8 @@ export default function RealFlipBook({ memories = [], onDelete }) {
           {/* Reset to Cover */}
           <button
             onClick={() => {
-              if (currentPage !== 0 && !isFlipping) {
-                playPageTurnSound();
-                setCurrentPage(0);
+              if (bookRef.current) {
+                bookRef.current.pageFlip().flip(0);
               }
             }}
             className="p-2 rounded-xl bg-pastel-surface hover:bg-pastel-pink/20 text-pastel-lavender-dark border border-pastel-pink/30 text-xs font-bold transition-all flex items-center gap-1.5"
@@ -160,233 +153,187 @@ export default function RealFlipBook({ memories = [], onDelete }) {
         </div>
       </div>
 
-      {/* 3D BOOK STAGE CONTAINER */}
-      <div className="relative perspective-1000 py-2 sm:py-6">
-        <div 
-          className={`relative min-h-[480px] sm:min-h-[540px] w-full max-w-3xl mx-auto rounded-3xl transition-transform duration-500 transform-style-3d shadow-2xl ${
-            isFlipping ? (flipDirection === 'next' ? 'rotate-y-[-6deg]' : 'rotate-y-[6deg]') : ''
-          }`}
+      {/* HTML5 REAL PAGEFLIP CONTAINER STAGE */}
+      <div className="flex justify-center items-center py-2 sm:py-4 overflow-hidden">
+        <HTML5FlipBook
+          width={380}
+          height={520}
+          size="stretch"
+          minWidth={280}
+          maxWidth={450}
+          minHeight={420}
+          maxHeight={600}
+          maxShadowOpacity={0.6}
+          showCover={true}
+          mobileScrollSupport={true}
+          onFlip={onPageChange}
+          ref={bookRef}
+          className="shadow-2xl rounded-2xl overflow-hidden"
         >
-          {/* COVER PAGE SPREAD (CurrentPage === 0) */}
-          {currentPage === 0 && (
-            <div className="w-full min-h-[480px] sm:min-h-[540px] rounded-3xl bg-gradient-to-br from-[#f8ece1] via-[#fff5eb] to-[#fce4ec] border-4 border-dashed border-pastel-pink/40 shadow-scrapbook p-6 sm:p-10 flex flex-col items-center justify-center text-center relative overflow-hidden group cursor-pointer"
-                 onClick={goToNextPage}>
-              {/* Washi tape top banner */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 washi-tape px-6 py-1 rounded-sm text-xs font-headline font-bold text-pastel-pink-dark shadow-sm">
-                2nd Anniversary Romantic Memory Book
+          {/* FRONT COVER */}
+          <Page density="hard" className="bg-gradient-to-br from-[#f8ece1] via-[#fff5eb] to-[#fce4ec] border-4 border-dashed border-pastel-pink/40">
+            <div className="flex flex-col items-center justify-center text-center h-full space-y-4">
+              <div className="washi-tape px-4 py-1 rounded-sm text-[11px] font-headline font-bold text-pastel-pink-dark shadow-sm">
+                2nd Anniversary Scrapbook
               </div>
 
-              {/* Decorative background elements */}
-              <div className="absolute -top-10 -left-10 w-40 h-40 bg-pastel-pink/20 rounded-full blur-2xl"></div>
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-pastel-lavender/20 rounded-full blur-2xl"></div>
-
-              {/* Heart Badge & Frame */}
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white border-4 border-pastel-pink shadow-sticker flex items-center justify-center mb-6 transform group-hover:scale-110 transition-transform">
-                <Heart className="w-10 h-10 sm:w-12 sm:h-12 fill-pastel-pink text-pastel-pink animate-pulse" />
+              <div className="w-16 h-16 rounded-full bg-white border-4 border-pastel-pink shadow-sticker flex items-center justify-center my-2">
+                <Heart className="w-8 h-8 fill-pastel-pink text-pastel-pink animate-pulse" />
               </div>
 
-              <span className="inline-block px-3.5 py-1 rounded-full bg-white/90 text-pastel-pink-dark font-headline font-extrabold text-xs border border-pastel-pink/40 shadow-sm mb-3">
-                📖 ALBUM KENANGAN KENCAN
+              <span className="px-3 py-0.5 rounded-full bg-white text-pastel-pink-dark font-headline font-extrabold text-[10px] border border-pastel-pink/40 shadow-sm">
+                📖 ALBUM KENANGAN REAL
               </span>
 
-              <h1 className="font-headline font-black text-3xl sm:text-5xl text-pastel-lavender-dark mb-4 leading-tight">
+              <h1 className="font-headline font-black text-2xl sm:text-3xl text-pastel-lavender-dark leading-tight">
                 Lesmana & Nafla
               </h1>
 
-              <p className="font-handwriting text-2xl sm:text-3xl text-pastel-pink-dark mb-6">
-                "730 Hari Bersama, Penuh Cinta, Tawa & Cerita Manis"
+              <p className="font-handwriting text-xl sm:text-2xl text-pastel-pink-dark">
+                "730 Hari Penuh Cinta & Momen Manis"
               </p>
 
-              <div className="flex items-center gap-2 text-xs font-mono font-bold text-pastel-text/80 bg-white/80 px-4 py-2 rounded-2xl border border-pastel-pink/30 shadow-sm mb-8">
-                <Calendar className="w-4 h-4 text-pastel-lavender" />
-                <span>8 September 2024 – 8 September 2026</span>
+              <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold text-pastel-text/80 bg-white/90 px-3 py-1.5 rounded-xl border border-pastel-pink/30 shadow-sm">
+                <Calendar className="w-3.5 h-3.5 text-pastel-lavender" />
+                <span>8 Sep 2024 – 8 Sep 2026</span>
               </div>
 
-              <div className="animate-bounce inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-pastel-lavender text-white font-headline font-bold text-xs shadow-squish hover:scale-105 transition-all">
-                <span>Klik atau Panah Kanan untuk Buka Buku 📖</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-            </div>
-          )}
-
-          {/* BACK COVER PAGE SPREAD (CurrentPage === totalPages - 1) */}
-          {currentPage === totalPages - 1 && (
-            <div className="w-full min-h-[480px] sm:min-h-[540px] rounded-3xl bg-gradient-to-br from-[#fcf4ec] via-[#f8e8ee] to-[#edf2ff] border-4 border-dashed border-pastel-lavender/40 shadow-scrapbook p-6 sm:p-10 flex flex-col items-center justify-center text-center relative overflow-hidden group cursor-pointer"
-                 onClick={goToPrevPage}>
-              <div className="w-20 h-20 rounded-full bg-white border-4 border-pastel-lavender shadow-sticker flex items-center justify-center mb-6">
-                <Sparkles className="w-10 h-10 text-pastel-lavender-dark animate-spin-slow" />
-              </div>
-
-              <h2 className="font-headline font-black text-3xl sm:text-4xl text-pastel-lavender-dark mb-3">
-                Penutup & Harapan 💕
-              </h2>
-
-              <p className="font-handwriting text-2xl sm:text-3xl text-slate-700 max-w-lg leading-relaxed mb-6">
-                "Terima kasih telah menemani dan mengukir setiap kenangan indah ini. Semoga perjalanan tahun ke-3 kita semakin manis!"
+              <p className="text-[10px] font-headline font-bold text-pastel-lavender-dark bg-pastel-lavender/20 px-3 py-1 rounded-full animate-bounce">
+                👉 Klik & Tarik Sudut Halaman Untuk Membuka
               </p>
-
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white text-pastel-pink-dark font-headline font-bold text-xs border border-pastel-pink/40 shadow-sm mb-6">
-                <span>Total {memories.length} Momen Indah Tersimpan</span>
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playPageTurnSound();
-                  setCurrentPage(0);
-                }}
-                className="px-6 py-3 rounded-2xl bg-pastel-pink text-white font-headline font-bold text-xs shadow-squish-pink hover:scale-105 active:scale-95 transition-all btn-squish flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Baca Ulang dari Cover Depan</span>
-              </button>
             </div>
-          )}
+          </Page>
 
-          {/* MEMORY SPREAD PAGE (CurrentPage 1..memories.length) */}
-          {activeMemory && (
-            <div className="w-full min-h-[480px] sm:min-h-[540px] rounded-3xl bg-[#fffcf7] border-2 border-pastel-pink/30 shadow-scrapbook overflow-hidden flex flex-col md:flex-row relative">
-              {/* BOOK SPINE CREASE SHADOW (Middle binding visual effect) */}
-              <div className="hidden md:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-8 bg-gradient-to-r from-black/10 via-black/5 to-transparent z-20 pointer-events-none border-r border-black/5"></div>
-
-              {/* LEFT PAGE: POLAROID PHOTO FRAME */}
-              <div className="md:w-1/2 p-6 sm:p-8 bg-[#fffbf5] flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-dashed border-pastel-pink/30 relative">
-                {/* Washi tape decorator */}
-                <div className="absolute top-3 left-1/2 -translate-x-1/2 washi-tape-pink px-4 py-0.5 rounded-sm text-[10px] font-headline font-bold text-pastel-pink-dark shadow-sm z-10">
-                  {activeMemory.category?.toUpperCase() || 'MEMORY'}
+          {/* MEMORIES PAGES (2 pages per memory: Photo Page & Story Page) */}
+          {memories.map((mem, idx) => [
+            /* LEFT PAGE: PHOTO & DETAILS */
+            <Page key={`mem-photo-${mem.id || idx}`} density="soft" className="bg-[#fffbf5] border-r border-dashed border-pastel-pink/30">
+              <div className="flex flex-col justify-between h-full space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="washi-tape-pink px-3 py-0.5 rounded-sm text-[10px] font-headline font-bold text-pastel-pink-dark">
+                    {mem.category?.toUpperCase() || 'MEMORY'}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-pastel-lavender-dark">
+                    Momen #{idx + 1}
+                  </span>
                 </div>
 
-                {/* POLAROID CARD CONTAINER */}
-                <div className="w-full max-w-xs bg-white p-4 rounded-xl shadow-polaroid border border-gray-100 transform -rotate-1 hover:rotate-0 transition-transform duration-300">
-                  <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 mb-3 border border-gray-200">
+                {/* POLAROID FRAME */}
+                <div className="bg-white p-3 rounded-xl shadow-polaroid border border-gray-200 transform -rotate-1 my-auto">
+                  <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 mb-2 border border-gray-200">
                     <img
-                      src={activeMemory.photo || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80'}
-                      alt={activeMemory.title}
+                      src={mem.photo || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80'}
+                      alt={mem.title}
                       className="w-full h-full object-cover"
-                      loading="lazy"
                     />
-                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded-md text-[10px] font-headline font-bold flex items-center gap-1">
+                    <div className="absolute bottom-1.5 left-1.5 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-headline font-bold flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-pastel-pink" />
-                      <span className="truncate max-w-[140px]">{activeMemory.location || 'Lokasi Kencan'}</span>
+                      <span className="truncate max-w-[120px]">{mem.location || 'Lokasi Kencan'}</span>
                     </div>
                   </div>
-
-                  {/* Caption & Date under Polaroid */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-pastel-lavender-dark">
-                      <Calendar className="w-3.5 h-3.5 text-pastel-pink" />
-                      <span>{activeMemory.date}</span>
+                  <div className="flex items-center justify-between pt-0.5">
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-pastel-lavender-dark">
+                      <Calendar className="w-3 h-3 text-pastel-pink" />
+                      <span>{mem.date}</span>
                     </div>
-                    {/* Rating Stars */}
                     <div className="flex items-center gap-0.5 text-amber-400">
-                      {[...Array(activeMemory.rating || 5)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-amber-400" />
+                      {[...Array(mem.rating || 5)].map((_, i) => (
+                        <Star key={i} className="w-2.5 h-2.5 fill-amber-400" />
                       ))}
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* RIGHT PAGE: HANDWRITTEN MEMO & STORY */}
-              <div className="md:w-1/2 p-6 sm:p-8 bg-[#fffcf7] flex flex-col justify-between relative">
-                {/* Top Header Badge */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-pastel-pink-dark bg-pastel-pink/15 px-2.5 py-1 rounded-full border border-pastel-pink/30">
-                      📖 Memo Kencan #{currentMemoryIndex + 1}
+                <div className="text-[10px] text-center font-mono font-bold text-pastel-text/60">
+                  - Hal. {idx * 2 + 1} -
+                </div>
+              </div>
+            </Page>,
+
+            /* RIGHT PAGE: HANDWRITTEN MEMO & STORY */
+            <Page key={`mem-story-${mem.id || idx}`} density="soft" className="bg-[#fffcf7]">
+              <div className="flex flex-col justify-between h-full space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-mono font-bold text-pastel-pink-dark bg-pastel-pink/15 px-2 py-0.5 rounded-full border border-pastel-pink/30">
+                      📖 Catatan Cerita
                     </span>
                     {onDelete && (
                       <button
-                        onClick={() => onDelete(activeMemory.id)}
-                        className="text-[10px] text-rose-500 hover:text-rose-700 hover:underline font-bold"
+                        onClick={() => onDelete(mem.id)}
+                        className="text-[9px] text-rose-500 hover:underline font-bold"
                       >
-                        Hapus Kenangan
+                        Hapus
                       </button>
                     )}
                   </div>
 
-                  <h2 className="font-headline font-extrabold text-xl sm:text-2xl text-pastel-lavender-dark leading-snug">
-                    {activeMemory.title}
-                  </h2>
+                  <h3 className="font-headline font-extrabold text-lg text-pastel-lavender-dark leading-snug mb-2">
+                    {mem.title}
+                  </h3>
 
-                  {/* Handwritten Story Box */}
-                  <div className="bg-white/80 p-4 sm:p-5 rounded-2xl border border-pastel-pink/20 shadow-sm relative min-h-[160px]">
-                    {/* Subtle notebook lined background effect */}
-                    <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_bottom,#8b5cf6_1px,transparent_1px)] bg-[size:100%_24px] pointer-events-none rounded-2xl"></div>
-
-                    <p className="font-handwriting text-xl sm:text-2xl text-slate-700 leading-relaxed relative z-10">
-                      "{activeMemory.story || 'Tidak ada catatan cerita untuk momen kencan ini.'}"
+                  <div className="bg-white/90 p-4 rounded-xl border border-pastel-pink/20 shadow-sm relative min-h-[160px]">
+                    <p className="font-handwriting text-xl text-slate-700 leading-relaxed">
+                      "{mem.story || 'Tidak ada catatan cerita untuk momen ini.'}"
                     </p>
                   </div>
                 </div>
 
-                {/* Bottom Decorative Footer */}
-                <div className="pt-4 flex items-center justify-between border-t border-dashed border-pastel-pink/30 mt-4">
-                  <div className="flex items-center gap-1.5 text-xs text-pastel-text/80 font-medium">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Scrapbook Lesmana & Nafla</span>
+                <div className="pt-2 border-t border-dashed border-pastel-pink/20 flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-[10px] text-pastel-text/70">
+                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <span>Lesmana & Nafla Scrapbook</span>
                   </div>
-                  <div className="text-xs font-mono font-bold text-pastel-lavender-dark">
-                    Hal. {currentPage} / {memories.length}
-                  </div>
+                  <span className="text-[10px] font-mono font-bold text-pastel-text/60">
+                    - Hal. {idx * 2 + 2} -
+                  </span>
                 </div>
               </div>
+            </Page>
+          ]).flat()}
+
+          {/* BACK COVER */}
+          <Page density="hard" className="bg-gradient-to-br from-[#fcf4ec] via-[#f8e8ee] to-[#edf2ff] border-4 border-dashed border-pastel-lavender/40">
+            <div className="flex flex-col items-center justify-center text-center h-full space-y-4">
+              <div className="w-16 h-16 rounded-full bg-white border-4 border-pastel-lavender shadow-sticker flex items-center justify-center mb-2">
+                <Sparkles className="w-8 h-8 text-pastel-lavender-dark" />
+              </div>
+
+              <h2 className="font-headline font-black text-2xl text-pastel-lavender-dark">
+                Penutup & Harapan 💕
+              </h2>
+
+              <p className="font-handwriting text-xl text-slate-700 max-w-xs leading-relaxed">
+                "Terima kasih telah menemani dan mengukir setiap kenangan indah ini. Semoga perjalanan tahun ke-3 kita semakin manis!"
+              </p>
+
+              <div className="px-3 py-1 rounded-full bg-white text-pastel-pink-dark font-headline font-bold text-[10px] border border-pastel-pink/40 shadow-sm">
+                Total {memories.length} Momen Indah Tersimpan
+              </div>
             </div>
-          )}
-        </div>
+          </Page>
+        </HTML5FlipBook>
       </div>
 
-      {/* BOTTOM NAVIGATION & SLIDER CONTROLS */}
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl p-4 border border-pastel-pink/30 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Previous Page Button */}
+      {/* Navigation Buttons Footer */}
+      <div className="bg-white/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-pastel-pink/30 shadow-sm flex items-center justify-between gap-3">
         <button
           onClick={goToPrevPage}
-          disabled={currentPage === 0 || isFlipping}
-          className={`w-full sm:w-auto px-5 py-2.5 rounded-2xl font-headline font-bold text-xs flex items-center justify-center gap-2 transition-all btn-squish ${
-            currentPage === 0
-              ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400'
-              : 'bg-pastel-surface text-pastel-lavender-dark hover:bg-pastel-pink/20 border border-pastel-pink/30 shadow-sm'
-          }`}
+          className="px-4 py-2 rounded-xl bg-pastel-surface hover:bg-pastel-pink/20 text-pastel-lavender-dark border border-pastel-pink/30 font-headline font-bold text-xs flex items-center gap-1.5 transition-all btn-squish"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Halaman Sebelumnya</span>
+          <span>Prev Page</span>
         </button>
 
-        {/* Page Jump Slider Bar */}
-        <div className="flex items-center gap-3 w-full sm:w-1/2">
-          <span className="text-xs font-mono font-bold text-pastel-text/70 whitespace-nowrap">
-            Cover
-          </span>
-          <input
-            type="range"
-            min="0"
-            max={totalPages - 1}
-            value={currentPage}
-            onChange={(e) => {
-              const val = parseInt(e.target.value, 10);
-              if (!isFlipping && val !== currentPage) {
-                playPageTurnSound();
-                setCurrentPage(val);
-              }
-            }}
-            className="w-full accent-pastel-pink cursor-pointer h-2 bg-pastel-pink/20 rounded-lg"
-          />
-          <span className="text-xs font-mono font-bold text-pastel-text/70 whitespace-nowrap">
-            Penutup
-          </span>
+        <div className="text-xs font-mono font-bold text-pastel-lavender-dark bg-pastel-lavender/10 px-4 py-1.5 rounded-full border border-pastel-lavender/30">
+          Tarik Ujung Halaman Untuk Membalik 📖
         </div>
 
-        {/* Next Page Button */}
         <button
           onClick={goToNextPage}
-          disabled={currentPage === totalPages - 1 || isFlipping}
-          className={`w-full sm:w-auto px-5 py-2.5 rounded-2xl font-headline font-bold text-xs flex items-center justify-center gap-2 transition-all btn-squish ${
-            currentPage === totalPages - 1
-              ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400'
-              : 'bg-pastel-lavender text-white shadow-squish hover:scale-105'
-          }`}
+          className="px-4 py-2 rounded-xl bg-pastel-lavender text-white font-headline font-bold text-xs flex items-center gap-1.5 transition-all shadow-squish hover:scale-105 btn-squish"
         >
-          <span>Halaman Selanjutnya</span>
+          <span>Next Page</span>
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
