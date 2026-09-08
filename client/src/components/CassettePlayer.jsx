@@ -60,23 +60,44 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
     setIsMuted(!isMuted);
   };
 
-  // Timer counter for YouTube playback visualization
+  // Sync YouTube player events (realtime current time & duration) via postMessage API
   useEffect(() => {
-    let interval = null;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentTime(prev => prev + 1);
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+    const handleMessage = (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data && data.event === 'infoDelivery' && data.info) {
+          if (typeof data.info.currentTime === 'number') {
+            setCurrentTime(data.info.currentTime);
+          }
+          if (typeof data.info.duration === 'number' && data.info.duration > 0) {
+            setTotalDuration(data.info.duration);
+          }
+          if (typeof data.info.playerState === 'number') {
+            if (data.info.playerState === 1) setIsPlaying(true);
+            else if (data.info.playerState === 2 || data.info.playerState === 0) setIsPlaying(false);
+          }
+        }
+      } catch (err) {
+        // ignore non-JSON messages
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const onTimeUpdate = () => {
     if (!youtubeId && audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
-      setTotalDuration(audioRef.current.duration || 180);
+      if (audioRef.current.duration && !isNaN(audioRef.current.duration)) {
+        setTotalDuration(audioRef.current.duration);
+      }
+    }
+  };
+
+  const onLoadedMetadata = () => {
+    if (!youtubeId && audioRef.current && audioRef.current.duration) {
+      setTotalDuration(audioRef.current.duration);
     }
   };
 
@@ -90,7 +111,14 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
   const handleSeek = (e) => {
     const newTime = parseFloat(e.target.value);
     setCurrentTime(newTime);
-    if (!youtubeId && audioRef.current) {
+    if (youtubeId) {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'seekTo', args: [newTime, true] }),
+          '*'
+        );
+      }
+    } else if (audioRef.current) {
       audioRef.current.currentTime = newTime;
     }
   };
@@ -128,7 +156,7 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
           </div>
         </div>
 
-        {/* Tape View Window / Equalizer / YT Frame */}
+        {/* Tape View Window / Equalizer */}
         <div className="flex-1 mx-4 h-14 bg-amber-950/40 rounded-lg border border-amber-500/20 flex items-center justify-center px-2 relative overflow-hidden">
           <div className="w-full flex items-center justify-center gap-1">
             {[...Array(12)].map((_, i) => (
@@ -166,12 +194,13 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
         </p>
       </div>
 
-      {/* Progress Bar Slider */}
+      {/* Progress Bar Seek Slider */}
       <div className="mb-4 px-1">
         <input
           type="range"
           min="0"
-          max={totalDuration}
+          max={totalDuration > 0 ? totalDuration : 100}
+          step="1"
           value={currentTime}
           onChange={handleSeek}
           className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-pastel-pink"
@@ -216,6 +245,7 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
           ref={audioRef}
           src={audioUrl || "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3"}
           onTimeUpdate={onTimeUpdate}
+          onLoadedMetadata={onLoadedMetadata}
           onEnded={() => setIsPlaying(false)}
         />
       )}
