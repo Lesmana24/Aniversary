@@ -24,7 +24,7 @@ export default function Navbar({ activeTab, setActiveTab, isAuthenticated, onLog
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-headline font-extrabold text-lg text-pastel-lavender-dark">
-                Lesmana & Bebe
+                Lesmana & Nafla
               </span>
               <span className="bg-pastel-pink/20 text-pastel-pink-dark text-[10px] font-headline font-bold px-2 py-0.5 rounded-full border border-pastel-pink/40">
                 2nd Aniv 💖

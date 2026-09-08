@@ -53,9 +53,9 @@ export default function Home({ config, memories, wishlist, onToggleWish, onAddWi
     ? memories[currentHeroIndex % memories.length]
     : {
         id: 'cover-1',
-        title: 'Lesmana & Bebe 2nd Anniversary',
+        title: 'Lesmana & Nafla 2nd Anniversary',
         date: '8 September 2026',
-        location: 'Di mana pun Bersama Bebe',
+        location: 'Di mana pun Bersama Nafla',
         category: 'SPECIAL',
         photo: config?.coverPhoto || 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80',
         story: '730 hari penuh cinta, tawa, dan kenangan indah tak terlupakan.',
@@ -76,7 +76,7 @@ export default function Home({ config, memories, wishlist, onToggleWish, onAddWi
           <div className="md:col-span-7 space-y-5 text-center md:text-left">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pastel-pink/20 text-pastel-pink-dark font-headline font-bold text-xs border border-pastel-pink/30">
               <Heart className="w-3.5 h-3.5 fill-pastel-pink text-pastel-pink animate-pulse" />
-              <span>Anniversary Scrapbook Lesmana & Bebe</span>
+              <span>Anniversary Scrapbook Lesmana & Nafla</span>
             </div>
 
             <h1 className="font-headline font-black text-3xl sm:text-4xl lg:text-5xl text-pastel-lavender-dark leading-tight">
@@ -84,7 +84,7 @@ export default function Home({ config, memories, wishlist, onToggleWish, onAddWi
             </h1>
 
             <p className="text-sm sm:text-base text-pastel-text leading-relaxed font-medium">
-              {config?.subtitle || "Perjalanan 2 tahun indah Lesmana dan Nafla (Bebe). Mari mengenang momen kencan, membuka kartu gosok, dan mendengarkan lagu spesial."}
+              {config?.subtitle || "Perjalanan 2 tahun indah Lesmana dan Nafla. Mari mengenang momen kencan, membuka kartu gosok, dan mendengarkan lagu spesial."}
             </p>
 
             {/* Live Counter Cards Grid */}

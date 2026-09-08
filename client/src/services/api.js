@@ -22,10 +22,10 @@ const DEFAULT_DATA = {
     startDate: "2024-09-08T00:00:00.000Z",
     targetDate: "2026-09-08T00:00:00.000Z",
     partner1: "Lesmana",
-    partner2: "Nafla (Bebe)",
+    partner2: "Nafla",
     subtitle: "730 Hari Penuh Cinta, Tawa & Kenangan Indah",
     coverPhoto: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80",
-    bgmTitle: "Lagu Spesial Pilihan Lesmana untuk Bebe 🎧"
+    bgmTitle: "Lagu Spesial Pilihan Lesmana untuk Nafla 🎧"
   },
   wishlist: [
     { id: "wish-1", title: "Piknik Santai di Kebun Raya Bogor", category: "Outdoor", completed: true, priority: "High" },
@@ -79,7 +79,7 @@ const DEFAULT_DATA = {
   ],
   letter: {
     sender: "Lesmana",
-    receiver: "Nafla (Bebe) Sayang",
+    receiver: "Nafla Sayang",
     title: "Surat Cinta 730 Hari Bersama",
     date: "8 September 2026",
     content: "Halo Bebe sayang,\n\nTidak terasa sudah 730 hari (2 tahun penuh) kita berjalan berdampingan. Dari awal pertemuan yang penuh rasa canggung, obrolan manis sampai larut malam, gelak tawa di sela-sela kesibukan, sampai saat-saat kita saling menguatkan saat lelah.\n\nSetiap momen bersama Bebe selalu terasa istimewa. Terima kasih sudah menjadi sosok yang begitu sabar, manis, penuh perhatian, dan selalu membawa kehangatan di hari-hari Lesmana.\n\nSemoga di tahun ke-3 dan tahun-tahun berikutnya, kita bisa terus merajut impian bersama, menjelajahi tempat-tempat baru, dan saling mencintai dengan lebih dewasa dan bahagia.\n\nSelamat Anniversary ke-2 ya, Bebe sayang! I love you so much ❤️",

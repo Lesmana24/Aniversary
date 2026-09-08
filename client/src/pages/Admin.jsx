@@ -52,7 +52,7 @@ export default function Admin({
   const [configSubtitle, setConfigSubtitle] = useState(config?.subtitle || '');
   const [coverPhoto, setCoverPhoto] = useState(config?.coverPhoto || '');
   const [partner1, setPartner1] = useState(config?.partner1 || 'Lesmana');
-  const [partner2, setPartner2] = useState(config?.partner2 || 'Nafla (Bebe)');
+  const [partner2, setPartner2] = useState(config?.partner2 || 'Nafla');
   const [isUploadingCover, setIsUploadingCover] = useState(false);
 
   // New Memory Form State
@@ -67,7 +67,7 @@ export default function Admin({
   // Letter Form State
   const [letterTitle, setLetterTitle] = useState(letter?.title || '');
   const [letterSender, setLetterSender] = useState(letter?.sender || 'Lesmana');
-  const [letterReceiver, setLetterReceiver] = useState(letter?.receiver || 'Nafla (Bebe) Sayang');
+  const [letterReceiver, setLetterReceiver] = useState(letter?.receiver || 'Nafla Sayang');
   const [letterContent, setLetterContent] = useState(letter?.content || '');
   const [audioUrl, setAudioUrl] = useState(letter?.audioUrl || '');
   const [audioDuration, setAudioDuration] = useState(letter?.audioDuration || '02:30');
@@ -309,7 +309,7 @@ export default function Admin({
               Admin CMS Editor Scrapbook ⚙️
             </h1>
             <p className="text-xs sm:text-sm text-pastel-text mt-0.5 font-medium">
-              Panel Pengeditan Konten Lengkap untuk Lesmana & Bebe
+              Panel Pengeditan Konten Lengkap untuk Lesmana & Nafla
             </p>
           </div>
         </div>

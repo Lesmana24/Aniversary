@@ -23,7 +23,7 @@ export default function Timeline({ memories, onDeleteMemory, onOpenAdmin }) {
             Flip Book Kenangan Kencan 📖
           </h1>
           <p className="text-xs sm:text-sm text-pastel-text mt-1">
-            Kumpulan lembar foto polaroid dan memo cerita manis kencan Lesmana & Bebe.
+            Kumpulan lembar foto polaroid dan memo cerita manis kencan Lesmana & Nafla.
           </p>
         </div>
 

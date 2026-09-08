@@ -40,7 +40,7 @@ export default function LoveLetter({ letter }) {
         {/* Washi Tape Corner Pin */}
         <div className="absolute -top-3 left-8 w-28 h-6 washi-tape-pink -rotate-3 z-10 flex items-center justify-center">
           <span className="text-[10px] font-headline font-bold text-pastel-pink-dark uppercase">
-            Surat Untuk Bebe
+            Surat Untuk Nafla
           </span>
         </div>
 
@@ -71,7 +71,7 @@ export default function LoveLetter({ letter }) {
 
         {/* Receiver Greeting */}
         <div className="relative z-10 mb-4 font-headline font-bold text-lg text-pastel-pink-dark">
-          Untuk {receiver || "Nafla (Bebe) Sayang"},
+          Untuk {receiver || "Nafla Sayang"},
         </div>
 
         {/* Letter Content Body */}
