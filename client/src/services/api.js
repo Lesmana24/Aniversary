@@ -25,7 +25,7 @@ const DEFAULT_DATA = {
     partner2: "Nafla (Bebe)",
     subtitle: "730 Hari Penuh Cinta, Tawa & Kenangan Indah",
     coverPhoto: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80",
-    bgmTitle: "Pesan Suara & Lagu Spesial Bebe 🎧"
+    bgmTitle: "Lagu Spesial Pilihan Lesmana untuk Bebe 🎧"
   },
   wishlist: [
     { id: "wish-1", title: "Piknik Santai di Kebun Raya Bogor", category: "Outdoor", completed: true, priority: "High" },

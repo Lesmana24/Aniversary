@@ -189,7 +189,7 @@ export default function Admin({
       audioDuration
     });
     onRefreshData();
-    showToast('💌 Surat Cinta & Audio Voice Note diperbarui!');
+    showToast('💌 Surat Cinta & Lagu Spesial diperbarui!');
   };
 
   // 5. Reset Vouchers
@@ -281,7 +281,7 @@ export default function Admin({
     { id: 'beranda', label: '🏠 Edit Beranda', desc: 'Judul, Foto Cover & Impian' },
     { id: 'timeline', label: '📖 Edit Flip Book', desc: 'Daftar Kenangan Kencan' },
     { id: 'vouchers', label: '🎟️ Kartu Gosok', desc: 'Voucher & Reset Hadiah' },
-    { id: 'letter', label: '💌 Surat & Suara', desc: 'Pesan Suara & Teks Surat' },
+    { id: 'letter', label: '💌 Surat & Lagu', desc: 'Lagu Spesial & Teks Surat' },
     { id: 'quiz', label: '💡 Kuis Trivia', desc: 'Kelola Soal Trivia Cinta' },
   ];
 
@@ -800,9 +800,9 @@ export default function Admin({
             <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-scrapbook border-2 border-dashed border-pastel-lavender/40 space-y-6">
               <div className="border-b border-dashed border-pastel-pink/30 pb-3">
                 <h2 className="font-headline font-extrabold text-xl text-pastel-lavender-dark flex items-center gap-2">
-                  <span>💌 Edit Surat Cinta & Pesan Suara</span>
+                  <span>💌 Edit Surat Cinta & Lagu Spesial</span>
                 </h2>
-                <p className="text-xs text-pastel-text mt-0.5">Ubah isi teks surat cinta romantis dan URL audio rekaman voice note.</p>
+                <p className="text-xs text-pastel-text mt-0.5">Ubah isi teks surat cinta romantis dan URL link lagu YouTube / MP3.</p>
               </div>
 
               <form onSubmit={handleSaveLetter} className="space-y-4">

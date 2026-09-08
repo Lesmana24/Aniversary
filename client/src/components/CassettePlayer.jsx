@@ -159,7 +159,7 @@ export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) 
       <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 mb-4 border border-white/10 text-center">
         <h4 className="font-headline font-bold text-sm text-pastel-custard flex items-center justify-center gap-1.5 line-clamp-1">
           <Heart className="w-4 h-4 fill-pastel-pink text-pastel-pink" />
-          {title || "Pesan Suara Spesial dari Lesmana untuk Bebe 🎧"}
+          {title || "Lagu Spesial dari Lesmana untuk Bebe 🎧"}
         </h4>
         <p className="text-[11px] text-white/70 font-mono mt-0.5">
           {formatTime(currentTime)} / {formatTime(totalDuration)}

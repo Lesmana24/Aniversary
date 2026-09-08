@@ -6,7 +6,7 @@ export default function Navbar({ activeTab, setActiveTab, isAuthenticated, onLog
     { id: 'home', label: 'Beranda', icon: Heart },
     { id: 'timeline', label: 'Flip Book Kencan', icon: BookOpen },
     { id: 'vouchers', label: 'Kartu Gosok', icon: Gift },
-    { id: 'letter', label: 'Surat & Suara', icon: Mail },
+    { id: 'letter', label: 'Surat & Lagu', icon: Mail },
     { id: 'quiz', label: 'Kuis Cinta', icon: Sparkles },
   ];
 
