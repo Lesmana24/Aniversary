@@ -10,15 +10,38 @@ export function getYouTubeVideoId(url) {
   return (match && match[2].length === 11) ? match[2] : null;
 }
 
+export function parseDurationToSeconds(durStr) {
+  if (!durStr) return 180;
+  if (typeof durStr === 'number') return durStr;
+  const cleaned = String(durStr).trim();
+  if (cleaned.includes(':')) {
+    const parts = cleaned.split(':');
+    const mins = parseInt(parts[0], 10) || 0;
+    const secs = parseInt(parts[1], 10) || 0;
+    return mins * 60 + secs;
+  }
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) || parsed <= 0 ? 180 : parsed;
+}
+
 export default function CassettePlayer({ title, audioUrl, duration = "02:30" }) {
+  const initialDuration = parseDurationToSeconds(duration);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [totalDuration, setTotalDuration] = useState(180);
+  const [totalDuration, setTotalDuration] = useState(initialDuration);
   const audioRef = useRef(null);
   const iframeRef = useRef(null);
 
   const youtubeId = getYouTubeVideoId(audioUrl);
+
+  // Sync totalDuration whenever prop 'duration' changes
+  useEffect(() => {
+    const parsedSecs = parseDurationToSeconds(duration);
+    if (parsedSecs > 0) {
+      setTotalDuration(parsedSecs);
+    }
+  }, [duration]);
 
   const togglePlay = () => {
     if (youtubeId) {
